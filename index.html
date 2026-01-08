@@ -7,6 +7,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
+        .glow-red { 
+            box-shadow: 0 0 30px rgba(220, 38, 38, 0.4); 
+            border-color: rgba(220, 38, 38, 0.6) !important; 
+        }
         .gradient-bg { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
         .card-glow { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
         .score-ring { transform: rotate(-90deg); }
@@ -328,6 +332,32 @@
             </div>
         </div>
     </div>
+
+    <div id="assumptions-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity">
+    <div class="bg-slate-900 rounded-xl max-w-md w-full p-6 border border-red-500/30 glow-red relative">
+        
+        <div class="flex items-center gap-4 mb-4">
+            <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                <i class="fas fa-exclamation text-red-400 text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-white">Missing Information</h3>
+                <p class="text-xs text-red-300 uppercase tracking-wider font-semibold">Action Required</p>
+            </div>
+        </div>
+
+        <p class="text-gray-300 mb-6 leading-relaxed">
+            Some fields were left blank: <span id="assumptions-modal-list" class="text-white font-semibold"></span>.
+            <br><br>
+            <span class="text-sm text-gray-400">The system will use generic averages for these parts, but your upgrade recommendations might be less accurate.</span>
+        </p>
+
+        <button onclick="closeAssumptionsModal()" class="w-full py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 rounded-lg font-semibold transition shadow-lg shadow-red-900/20 flex items-center justify-center gap-2">
+            Continue Anyway
+            <i class="fas fa-arrow-right text-sm"></i>
+        </button>
+    </div>
+</div>
 
     <!-- Suggestion Modal -->
     <div id="suggest-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
@@ -1536,14 +1566,16 @@
             if (storage.score === null) missing.push('Storage');
             if (psu.wattage === null) missing.push('PSU');
 
-            const banner = document.getElementById('assumptions-banner');
-            const bannerText = document.getElementById('assumptions-text');
+            // This replaces the banner logic you found
             if (missing.length) {
-                banner.classList.remove('hidden');
-                bannerText.textContent = `N/A for: ${missing.join(', ')}. Overall score ignores unknown fields; upgrade filtering may be less accurate without PSU wattage.`;
-            } else {
-                banner.classList.add('hidden');
+                const modalList = document.getElementById('assumptions-modal-list');
+                if (modalList) modalList.textContent = missing.join(', ');
+                
+                const modal = document.getElementById('assumptions-modal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
             }
+            // End of replacement
 
             // Bottleneck and FPS
             displayBottleneck(cpuScore, gpuScore, resolution);
@@ -1891,6 +1923,12 @@
                     <span class="text-sm">${upgrade.type}: ${escapeHtml(upgrade.name.split(' ').slice(-2).join(' '))}</span>
                 </label>
             `).join('');
+        }
+
+        function closeAssumptionsModal() {
+            const modal = document.getElementById('assumptions-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
         }
 
         function simulateFPS() {
