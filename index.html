@@ -11,6 +11,11 @@
             box-shadow: 0 0 30px rgba(220, 38, 38, 0.4); 
             border-color: rgba(220, 38, 38, 0.6) !important; 
         }
+		.incompatible-glow {
+			border-color: rgba(245, 158, 11, 0.5) !important;
+			box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+			background-color: rgba(245, 158, 11, 0.05);
+		}
         .gradient-bg { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
         .card-glow { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
         .score-ring { transform: rotate(-90deg); }
@@ -1118,33 +1123,16 @@
         // Search / selection
         // =========================
         function searchComponent(type, query) {
-            lastTyped[type] = query;
+			const resultsDiv = document.getElementById(`${type}-results`);
+			if (!query || query.length < 1) {
+				resultsDiv.classList.add('hidden');
+				return;
+			}
 
-            // If user edits the input after selecting, drop the selection so validation is strict.
-            const currentSelectedName = (type === 'cpu' ? selectedCPU?.name : type === 'gpu' ? selectedGPU?.name : selectedMotherboard?.name) || '';
-            if (currentSelectedName && query.trim() !== currentSelectedName) {
-                clearSelection(type);
-                if (type === 'cpu') selectedCPU = null;
-                if (type === 'gpu') selectedGPU = null;
-                if (type === 'motherboard') selectedMotherboard = null;
-            }
+			let db = (type === 'cpu') ? cpuDatabase : (type === 'gpu') ? gpuDatabase : motherboardDatabase;
+			const filtered = db.filter(item => item.name.toLowerCase().includes(query.toLowerCase()));
 
-            clearFieldError(type);
-
-            const resultsDiv = document.getElementById(`${type}-results`);
-            if (!resultsDiv) return;
-
-            const trimmed = query.trim();
-            if (trimmed.length < 2) {
-                resultsDiv.classList.add('hidden');
-                resultsDiv.innerHTML = '';
-                return;
-            }
-
-            const database = getDatabase(type);
-            const results = database.filter(item => item.name.toLowerCase().includes(trimmed.toLowerCase())).slice(0, 10);
-
-            if (results.length === 0) {
+			if (filtered.length === 0) {
                 resultsDiv.innerHTML = `
                     <div class="p-4">
                         <div class="flex items-start gap-3">
@@ -1169,20 +1157,48 @@
                 return;
             }
 
-            resultsDiv.innerHTML = results.map(item => {
-                const safeName = item.name.replace(/'/g, "\\'");
-                return `
-                    <div class="px-4 py-2 hover:bg-slate-700 cursor-pointer transition"
-                         onclick="selectComponent('${type}', '${safeName}')">
-                        <span class="text-white">${escapeHtml(item.name)}</span>
-                        ${type !== 'motherboard' ? `<span class="text-gray-500 text-sm ml-2">Score: ${item.score}</span>` : ''}
-                        ${type === 'motherboard' ? `<span class="text-gray-500 text-sm ml-2">${item.socket} - ${item.chipset}</span>` : ''}
-                    </div>
-                `;
-            }).join('');
+			// Sort: Compatible items first, Incompatible items at the bottom
+			let items = [...filtered].sort((a, b) => {
+				let aComp = true, bComp = true;
+				if (type === 'cpu' && selectedMotherboard) {
+					aComp = (a.socket === selectedMotherboard.socket);
+					bComp = (b.socket === selectedMotherboard.socket);
+				} else if (type === 'motherboard' && selectedCpu) {
+					aComp = (a.socket === selectedCpu.socket);
+					bComp = (b.socket === selectedCpu.socket);
+				}
+				return (aComp === bComp) ? 0 : aComp ? -1 : 1;
+			});
 
-            resultsDiv.classList.remove('hidden');
-        }
+			resultsDiv.innerHTML = items.map(item => {
+				let isCompatible = true;
+				let explanation = "";
+
+				// Compatibility Logic
+				if (type === 'cpu' && selectedMotherboard && item.socket !== selectedMotherboard.socket) {
+					isCompatible = false;
+					explanation = `Incompatible: your motherboard has a ${selectedMotherboard.socket} slot whereas this CPU has a ${item.socket} slot.`;
+				} else if (type === 'motherboard' && selectedCpu && item.socket !== selectedCpu.socket) {
+					isCompatible = false;
+					explanation = `Incompatible: your CPU has a ${selectedCpu.socket} slot whereas this motherboard has a ${item.socket} slot.`;
+				}
+
+				const styling = !isCompatible ? 'incompatible-glow' : 'hover:bg-slate-800';
+
+				return `
+					<div onclick='selectComponent("${type}", ${JSON.stringify(item).replace(/'/g, "&apos;")})' 
+						 class="px-4 py-3 cursor-pointer border-b border-slate-700 last:border-0 transition-all ${styling}">
+						<div class="flex justify-between items-center">
+							<span class="font-medium text-sm text-white">${item.name}</span>
+							<span class="text-xs text-gray-500">${item.socket || (item.vram + 'GB')}</span>
+						</div>
+						${!isCompatible ? `<p class="text-[10px] text-amber-500 mt-1 italic"><i class="fas fa-triangle-exclamation mr-1"></i>${explanation}</p>` : ''}
+					</div>
+				`;
+			}).join('');
+
+			resultsDiv.classList.remove('hidden');
+		}
 
         function clearSearchField(type) {
             const input = document.getElementById(`${type}-input`);
@@ -1201,12 +1217,23 @@
             clearFieldError(type);
         }
 
-        function selectComponent(type, name) {
-            const database = getDatabase(type);
-            const selected = database.find(x => x.name === name);
-            if (!selected) return;
-            selectComponentByObject(type, selected);
-        }
+        function selectComponent(type, item) {
+			if (type === 'cpu') selectedCpu = item;
+			else if (type === 'gpu') selectedGpu = item;
+			else if (type === 'motherboard') selectedMotherboard = item;
+
+			const input = document.getElementById(`${type}-input`);
+			const results = document.getElementById(`${type}-results`);
+			const selectedText = document.getElementById(`${type}-selected`);
+
+			input.value = item.name;
+			input.classList.add('input-valid');
+			results.classList.add('hidden');
+			selectedText.textContent = `Selected: ${item.name} (${item.socket || item.vram + 'GB'})`;
+			
+			clearFieldError(type);
+			checkPSUWattage(); // New logic for PSU check
+		}
 
         function selectComponentByObject(type, selected) {
             if (type === 'cpu') selectedCPU = selected;
@@ -1931,6 +1958,35 @@
             modal.classList.remove('flex');
         }
 
+		function checkPSUWattage() {
+			const psuInput = document.getElementById('psu-wattage');
+			const psuVal = parseInt(psuInput.value);
+			
+			// Remove any existing warning first
+			let oldWarning = document.getElementById('psu-live-warning');
+			if (oldWarning) oldWarning.remove();
+			psuInput.classList.remove('border-amber-500', 'text-amber-400');
+
+			if (isNaN(psuVal) || !selectedCpu || !selectedGpu) return;
+
+			// Estimate required wattage (CPU + GPU TDP + 150W buffer for system)
+			const estimatedRequired = Math.ceil((selectedCpu.tdp || 100) + (selectedGpu.tdp || 200) + 150);
+
+			if (psuVal < estimatedRequired) {
+				psuInput.classList.add('border-amber-500', 'text-amber-400');
+				const msg = document.createElement('p');
+				msg.id = 'psu-live-warning';
+				msg.className = 'mt-2 text-xs text-amber-400 italic';
+				msg.innerHTML = `<i class="fas fa-bolt mr-1"></i> This doesn't look right, your components would require an estimate of ~${estimatedRequired}W.`;
+				psuInput.parentNode.appendChild(msg);
+			}
+		}
+
+		// Add event listener so it updates as the user types in the PSU box
+		document.addEventListener('DOMContentLoaded', () => {
+			document.getElementById('psu-wattage').addEventListener('input', checkPSUWattage);
+		});
+
         function simulateFPS() {
             const checkedBoxes = document.querySelectorAll('.sim-checkbox:checked');
             const resultsDiv = document.getElementById('simulation-results');
@@ -2119,6 +2175,7 @@
                     document.getElementById('cpu-results')?.classList.add('hidden');
                     document.getElementById('gpu-results')?.classList.add('hidden');
                     document.getElementById('motherboard-results')?.classList.add('hidden');
+					document.getElementById('psu-wattage').addEventListener('input', checkPSUWattage);
                 }
             });
         });
