@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bottleneck Lab - Smart Hardware Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        .card-glow {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+        .score-ring {
+            transform: rotate(-90deg);
+        }
+        .bottleneck-indicator {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .upgrade-card:hover {
+            transform: translateY(-5px);
+            transition: transform 0.3s ease;
+        }
+        .help-tooltip {
+            position: relative;
+        }
+        .fps-bar {
+            transition: width 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <!-- Header -->
+    <header class="py-6 px-4 border-b border-indigo-800">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-microchip text-3xl text-indigo-400"></i>
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">The Analyst</h1>
+            </div>
+            <p class="text-gray-400 text-sm hidden md:block">Smart recommendations for maximum performance</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Component Input Section -->
+        <section id="input-section" class="mb-12">
+            <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                <i class="fas fa-keyboard text-indigo-400"></i>
+                Enter Your Current Components
+            </h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- CPU Input -->
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="font-medium flex items-center gap-2">
+                            <i class="fas fa-microchip text-blue-400"></i> CPU
+                        </label>
+                        <button onclick="showHelp('cpu')" class="text-gray-400 hover:text-indigo-400 transition">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="cpu-input" placeholder="Search CPU (e.g., Ryzen 5 5600X)" 
+                            class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 transition"
+                            oninput="searchComponent('cpu', this.value)">
+                        <div id="cpu-results" class="absolute z-10 w-full bg-slate-900 border border-slate-600 rounded-lg mt-1 hidden search-results"></div>
+                    </div>
+                    <div id="cpu-selected" class="mt-3 text-sm text-gray-400"></div>
+                </div>
+
+                <!-- GPU Input -->
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="font-medium flex items-center gap-2">
+                            <i class="fas fa-tv text-green-400"></i> GPU
+                        </label>
+                        <button onclick="showHelp('gpu')" class="text-gray-400 hover:text-indigo-400 transition">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="gpu-input" placeholder="Search GPU (e.g., RTX 4070)" 
+                            class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 transition"
+                            oninput="searchComponent('gpu', this.value)">
+                        <div id="gpu-results" class="absolute z-10 w-full bg-slate-900 border border-slate-600 rounded-lg mt-1 hidden search-results"></div>
+                    </div>
+                    <div id="gpu-selected" class="mt-3 text-sm text-gray-400"></div>
+                </div>
+
+                <!-- Motherboard Input -->
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="font-medium flex items-center gap-2">
+                            <i class="fas fa-server text-purple-400"></i> Motherboard
+                        </label>
+                        <button onclick="showHelp('motherboard')" class="text-gray-400 hover:text-indigo-400 transition">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="motherboard-input" placeholder="Search Motherboard" 
+                            class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 transition"
+                            oninput="searchComponent('motherboard', this.value)">
+                        <div id="motherboard-results" class="absolute z-10 w-full bg-slate-900 border border-slate-600 rounded-lg mt-1 hidden search-results"></div>
+                    </div>
+                    <div id="motherboard-selected" class="mt-3 text-sm text-gray-400"></div>
+                </div>
+
+                <!-- RAM Input -->
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="font-medium flex items-center gap-2">
+                            <i class="fas fa-memory text-yellow-400"></i> RAM
+                        </label>
+                        <button onclick="showHelp('ram')" class="text-gray-400 hover:text-indigo-400 transition">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" id="ram-size" placeholder="Size (GB)" 
+                            class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 transition">
+                        <input type="number" id="ram-speed" placeholder="Speed (MHz)" 
+                            class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                    <select id="ram-type" class="w-full mt-3 bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500">
+                        <option value="">Select RAM Type</option>
+                        <option value="DDR4">DDR4</option>
+                        <option value="DDR5">DDR5</option>
+                        <option value="DDR3">DDR3</option>
+                    </select>
+                </div>
+
+                <!-- Storage Input -->
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="font-medium flex items-center gap-2">
+                            <i class="fas fa-hdd text-red-400"></i> Storage
+                        </label>
+                        <button onclick="showHelp('storage')" class="text-gray-400 hover:text-indigo-400 transition">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                    </div>
+                    <select id="storage-type" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 mb-3">
+                        <option value="">Select Storage Type</option>
+                        <option value="HDD">HDD</option>
+                        <option value="SATA SSD">SATA SSD</option>
+                        <option value="NVMe SSD">NVMe SSD</option>
+                        <option value="NVMe Gen4">NVMe Gen4 SSD</option>
+                        <option value="NVMe Gen5">NVMe Gen5 SSD</option>
+                    </select>
+                    <input type="number" id="storage-size" placeholder="Size (GB)" 
+                        class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <!-- PSU Input -->
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="font-medium flex items-center gap-2">
+                            <i class="fas fa-bolt text-orange-400"></i> Power Supply
+                        </label>
+                        <button onclick="showHelp('psu')" class="text-gray-400 hover:text-indigo-400 transition">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                    </div>
+                    <input type="number" id="psu-wattage" placeholder="Wattage (W)" 
+                        class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- Resolution Selection -->
+            <div class="mt-6 bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                <label class="font-medium flex items-center gap-2 mb-4">
+                    <i class="fas fa-desktop text-cyan-400"></i> Target Resolution
+                </label>
+                <div class="flex flex-wrap gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="resolution" value="1080p" checked class="accent-indigo-500">
+                        <span>1080p</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="resolution" value="1440p" class="accent-indigo-500">
+                        <span>1440p</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="resolution" value="4k" class="accent-indigo-500">
+                        <span>4K</span>
+                    </label>
+                </div>
+            </div>
+
+            <button onclick="analyzeSystem()" class="mt-8 w-full md:w-auto px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold hover:from-indigo-500 hover:to-purple-500 transition transform hover:scale-105 flex items-center justify-center gap-2">
+                <i class="fas fa-chart-line"></i>
+                Analyze My System
+            </button>
+        </section>
+
+        <!-- Results Section (Hidden by default) -->
+        <section id="results-section" class="hidden">
+            <!-- Overall Score -->
+            <div class="bg-slate-800/50 rounded-xl p-8 border border-slate-700 mb-8 card-glow">
+                <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <i class="fas fa-gauge-high text-indigo-400"></i>
+                    System Analysis
+                </h2>
+                
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- Overall Score Circle -->
+                    <div class="flex flex-col items-center">
+                        <div class="relative w-40 h-40">
+                            <svg class="w-40 h-40">
+                                <circle cx="80" cy="80" r="70" stroke="#1e293b" stroke-width="12" fill="none"/>
+                                <circle id="score-circle" cx="80" cy="80" r="70" stroke="url(#gradient)" stroke-width="12" fill="none" 
+                                    stroke-dasharray="440" stroke-dashoffset="440" stroke-linecap="round" class="score-ring"/>
+                                <defs>
+                                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="#6366f1"/>
+                                        <stop offset="100%" stop-color="#a855f7"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center flex-col">
+                                <span id="overall-score" class="text-4xl font-bold">0</span>
+                                <span class="text-sm text-gray-400">Overall</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottleneck Analysis -->
+                    <div class="flex flex-col justify-center">
+                        <h3 class="font-medium mb-4">Bottleneck Analysis</h3>
+                        <div id="bottleneck-display" class="space-y-3">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Estimated FPS -->
+                    <div class="flex flex-col justify-center">
+                        <h3 class="font-medium mb-4">Estimated FPS (AAA Games 2024)</h3>
+                        <div id="fps-display" class="space-y-3">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Component Scores -->
+            <div class="bg-slate-800/50 rounded-xl p-8 border border-slate-700 mb-8">
+                <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <i class="fas fa-star text-yellow-400"></i>
+                    Component Scores
+                </h2>
+                <div id="component-scores" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <!-- Motherboard Upgrade Notice -->
+            <div id="motherboard-notice" class="hidden bg-amber-900/30 border border-amber-600 rounded-xl p-6 mb-8">
+                <div class="flex items-start gap-4">
+                    <i class="fas fa-exclamation-triangle text-amber-400 text-2xl mt-1"></i>
+                    <div>
+                        <h3 class="font-semibold text-amber-300 mb-2">Motherboard Upgrade Recommended</h3>
+                        <p id="motherboard-notice-text" class="text-gray-300"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upgrade Recommendations -->
+            <div class="bg-slate-800/50 rounded-xl p-8 border border-slate-700 mb-8">
+                <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <i class="fas fa-arrow-up-right-dots text-green-400"></i>
+                    Recommended Upgrades (Best Value)
+                </h2>
+                <div id="upgrade-recommendations" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <!-- Simulation Section -->
+            <div class="bg-slate-800/50 rounded-xl p-8 border border-slate-700">
+                <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <i class="fas fa-play-circle text-purple-400"></i>
+                    FPS Simulator with Upgrades
+                </h2>
+                <div class="mb-6">
+                    <p class="text-gray-400 mb-4">Select upgrades to simulate performance:</p>
+                    <div id="simulation-options" class="flex flex-wrap gap-3">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+                <button onclick="simulateFPS()" class="px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-medium transition flex items-center gap-2">
+                    <i class="fas fa-calculator"></i>
+                    Simulate Performance
+                </button>
+                <div id="simulation-results" class="mt-6 hidden">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-800 rounded-xl max-w-lg w-full p-6 border border-slate-600">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="help-title" class="text-lg font-semibold"></h3>
+                <button onclick="closeHelp()" class="text-gray-400 hover:text-white transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="help-content" class="text-gray-300 space-y-3"></div>
+        </div>
+    </div>
+
+    <script>
+        // Comprehensive Component Database
+        const cpuDatabase = [
+            // AMD Ryzen 9000 Series
+            { name: "AMD Ryzen 9 9950X", score: 98, cores: 16, threads: 32, socket: "AM5", tdp: 170, price: 599, generation: "Zen 5" },
+            { name: "AMD Ryzen 9 9900X", score: 94, cores: 12, threads: 24, socket: "AM5", tdp: 120, price: 449, generation: "Zen 5" },
+            { name: "AMD Ryzen 7 9700X", score: 88, cores: 8, threads: 16, socket: "AM5", tdp: 65, price: 359, generation: "Zen 5" },
+            { name: "AMD Ryzen 5 9600X", score: 82, cores: 6, threads: 12, socket: "AM5", tdp: 65, price: 279, generation: "Zen 5" },
+            // AMD Ryzen 7000 Series
+            { name: "AMD Ryzen 9 7950X3D", score: 97, cores: 16, threads: 32, socket: "AM5", tdp: 120, price: 699, generation: "Zen 4" },
+            { name: "AMD Ryzen 9 7950X", score: 95, cores: 16, threads: 32, socket: "AM5", tdp: 170, price: 549, generation: "Zen 4" },
+            { name: "AMD Ryzen 9 7900X3D", score: 93, cores: 12, threads: 24, socket: "AM5", tdp: 120, price: 499, generation: "Zen 4" },
+            { name: "AMD Ryzen 9 7900X", score: 91, cores: 12, threads: 24, socket: "AM5", tdp: 170, price: 399, generation: "Zen 4" },
+            { name: "AMD Ryzen 9 7900", score: 88, cores: 12, threads: 24, socket: "AM5", tdp: 65, price: 379, generation: "Zen 4" },
+            { name: "AMD Ryzen 7 7800X3D", score: 92, cores: 8, threads: 16, socket: "AM5", tdp: 120, price: 449, generation: "Zen 4" },
+            { name: "AMD Ryzen 7 7700X", score: 85, cores: 8, threads: 16, socket: "AM5", tdp: 105, price: 299, generation: "Zen 4" },
+            { name: "AMD Ryzen 7 7700", score: 82, cores: 8, threads: 16, socket: "AM5", tdp: 65, price: 279, generation: "Zen 4" },
+            { name: "AMD Ryzen 5 7600X", score: 78, cores: 6, threads: 12, socket: "AM5", tdp: 105, price: 229, generation: "Zen 4" },
+            { name: "AMD Ryzen 5 7600", score: 75, cores: 6, threads: 12, socket: "AM5", tdp: 65, price: 199, generation: "Zen 4" },
+            { name: "AMD Ryzen 5 7500F", score: 73, cores: 6, threads: 12, socket: "AM5", tdp: 65, price: 179, generation: "Zen 4" },
+            // AMD Ryzen 5000 Series
+            { name: "AMD Ryzen 9 5950X", score: 85, cores: 16, threads: 32, socket: "AM4", tdp: 105, price: 399, generation: "Zen 3" },
+            { name: "AMD Ryzen 9 5900X", score: 82, cores: 12, threads: 24, socket: "AM4", tdp: 105, price: 299, generation: "Zen 3" },
+            { name: "AMD Ryzen 7 5800X3D", score: 84, cores: 8, threads: 16, socket: "AM4", tdp: 105, price: 299, generation: "Zen 3" },
+            { name: "AMD Ryzen 7 5800X", score: 76, cores: 8, threads: 16, socket: "AM4", tdp: 105, price: 199, generation: "Zen 3" },
+            { name: "AMD Ryzen 7 5700X3D", score: 80, cores: 8, threads: 16, socket: "AM4", tdp: 105, price: 249, generation: "Zen 3" },
+            { name: "AMD Ryzen 7 5700X", score: 74, cores: 8, threads: 16, socket: "AM4", tdp: 65, price: 159, generation: "Zen 3" },
+            { name: "AMD Ryzen 7 5700G", score: 68, cores: 8, threads: 16, socket: "AM4", tdp: 65, price: 179, generation: "Zen 3" },
+            { name: "AMD Ryzen 5 5600X", score: 70, cores: 6, threads: 12, socket: "AM4", tdp: 65, price: 149, generation: "Zen 3" },
+            { name: "AMD Ryzen 5 5600", score: 68, cores: 6, threads: 12, socket: "AM4", tdp: 65, price: 129, generation: "Zen 3" },
+            { name: "AMD Ryzen 5 5500", score: 62, cores: 6, threads: 12, socket: "AM4", tdp: 65, price: 99, generation: "Zen 3" },
+            { name: "AMD Ryzen 5 5600G", score: 60, cores: 6, threads: 12, socket: "AM4", tdp: 65, price: 119, generation: "Zen 3" },
+            { name: "AMD Ryzen 5 4500", score: 55, cores: 6, threads: 12, socket: "AM4", tdp: 65, price: 79, generation: "Zen 2" },
+            { name: "AMD Ryzen 3 4100", score: 45, cores: 4, threads: 8, socket: "AM4", tdp: 65, price: 59, generation: "Zen 2" },
+            // AMD Ryzen 3000 Series
+            { name: "AMD Ryzen 9 3950X", score: 72, cores: 16, threads: 32, socket: "AM4", tdp: 105, price: 299, generation: "Zen 2" },
+            { name: "AMD Ryzen 9 3900X", score: 68, cores: 12, threads: 24, socket: "AM4", tdp: 105, price: 199, generation: "Zen 2" },
+            { name: "AMD Ryzen 7 3800X", score: 58, cores: 8, threads: 16, socket: "AM4", tdp: 105, price: 149, generation: "Zen 2" },
+            { name: "AMD Ryzen 7 3700X", score: 56, cores: 8, threads: 16, socket: "AM4", tdp: 65, price: 129, generation: "Zen 2" },
+            { name: "AMD Ryzen 5 3600X", score: 52, cores: 6, threads: 12, socket: "AM4", tdp: 95, price: 99, generation: "Zen 2" },
+            { name: "AMD Ryzen 5 3600", score: 50, cores: 6, threads: 12, socket: "AM4", tdp: 65, price: 79, generation: "Zen 2" },
+            { name: "AMD Ryzen 5 3500X", score: 45, cores: 6, threads: 6, socket: "AM4", tdp: 65, price: 69, generation: "Zen 2" },
+            { name: "AMD Ryzen 5 3400G", score: 44, cores: 4, threads: 8, socket: "AM4", tdp: 65, price: 89, generation: "Zen+" },
+            { name: "AMD Ryzen 3 3300X", score: 42, cores: 4, threads: 8, socket: "AM4", tdp: 65, price: 99, generation: "Zen 2" },
+            { name: "AMD Ryzen 3 3200G", score: 36, cores: 4, threads: 4, socket: "AM4", tdp: 65, price: 69, generation: "Zen+" },
+            { name: "AMD Ryzen 3 3100", score: 38, cores: 4, threads: 8, socket: "AM4", tdp: 65, price: 79, generation: "Zen 2" },
+            // AMD Ryzen 2000 Series
+            { name: "AMD Ryzen 7 2700X", score: 48, cores: 8, threads: 16, socket: "AM4", tdp: 105, price: 99, generation: "Zen+" },
+            { name: "AMD Ryzen 7 2700", score: 45, cores: 8, threads: 16, socket: "AM4", tdp: 65, price: 89, generation: "Zen+" },
+            { name: "AMD Ryzen 5 2600X", score: 42, cores: 6, threads: 12, socket: "AM4", tdp: 95, price: 79, generation: "Zen+" },
+            { name: "AMD Ryzen 5 2600", score: 40, cores: 6, threads: 12, socket: "AM4", tdp: 65, price: 69, generation: "Zen+" },
+            { name: "AMD Ryzen 5 2400G", score: 38, cores: 4, threads: 8, socket: "AM4", tdp: 65, price: 75, generation: "Zen" },
+            { name: "AMD Ryzen 3 2200G", score: 32, cores: 4, threads: 4, socket: "AM4", tdp: 65, price: 59, generation: "Zen" },
+            // AMD Ryzen 1000 Series
+            { name: "AMD Ryzen 7 1800X", score: 42, cores: 8, threads: 16, socket: "AM4", tdp: 95, price: 79, generation: "Zen" },
+            { name: "AMD Ryzen 7 1700X", score: 40, cores: 8, threads: 16, socket: "AM4", tdp: 95, price: 69, generation: "Zen" },
+            { name: "AMD Ryzen 7 1700", score: 38, cores: 8, threads: 16, socket: "AM4", tdp: 65, price: 65, generation: "Zen" },
+            { name: "AMD Ryzen 5 1600X", score: 36, cores: 6, threads: 12, socket: "AM4", tdp: 95, price: 59, generation: "Zen" },
+            { name: "AMD Ryzen 5 1600", score: 34, cores: 6, threads: 12, socket: "AM4", tdp: 65, price: 49, generation: "Zen" },
+            { name: "AMD Ryzen 5 1500X", score: 32, cores: 4, threads: 8, socket: "AM4", tdp: 65, price: 45, generation: "Zen" },
+            { name: "AMD Ryzen 5 1400", score: 30, cores: 4, threads: 8, socket: "AM4", tdp: 65, price: 39, generation: "Zen" },
+            { name: "AMD Ryzen 3 1300X", score: 28, cores: 4, threads: 4, socket: "AM4", tdp: 65, price: 35, generation: "Zen" },
+            { name: "AMD Ryzen 3 1200", score: 25, cores: 4, threads: 4, socket: "AM4", tdp: 65, price: 29, generation: "Zen" },
+            // AMD Threadripper
+            { name: "AMD Ryzen Threadripper 3990X", score: 95, cores: 64, threads: 128, socket: "sTRX4", tdp: 280, price: 2999, generation: "Zen 2" },
+            { name: "AMD Ryzen Threadripper 3970X", score: 85, cores: 32, threads: 64, socket: "sTRX4", tdp: 280, price: 1999, generation: "Zen 2" },
+            { name: "AMD Ryzen Threadripper 2990WX", score: 75, cores: 32, threads: 64, socket: "TR4", tdp: 250, price: 1299, generation: "Zen+" },
+            { name: "AMD Ryzen Threadripper 1950X", score: 65, cores: 16, threads: 32, socket: "TR4", tdp: 180, price: 599, generation: "Zen" },
+            // AMD FX Series
+            { name: "AMD FX-9590", score: 25, cores: 8, threads: 8, socket: "AM3+", tdp: 220, price: 99, generation: "Piledriver" },
+            { name: "AMD FX-8350", score: 20, cores: 8, threads: 8, socket: "AM3+", tdp: 125, price: 69, generation: "Piledriver" },
+            { name: "AMD FX-8320", score: 18, cores: 8, threads: 8, socket: "AM3+", tdp: 125, price: 59, generation: "Piledriver" },
+            { name: "AMD FX-6300", score: 15, cores: 6, threads: 6, socket: "AM3+", tdp: 95, price: 39, generation: "Piledriver" },
+            { name: "AMD FX-4300", score: 10, cores: 4, threads: 4, socket: "AM3+", tdp: 95, price: 29, generation: "Piledriver" },
+            // Intel 14th Gen
+            { name: "Intel Core i9-14900KS", score: 99, cores: 24, threads: 32, socket: "LGA1700", tdp: 253, price: 689, generation: "14th Gen" },
+            { name: "Intel Core i9-14900K", score: 97, cores: 24, threads: 32, socket: "LGA1700", tdp: 253, price: 569, generation: "14th Gen" },
+            { name: "Intel Core i9-14900KF", score: 96, cores: 24, threads: 32, socket: "LGA1700", tdp: 253, price: 549, generation: "14th Gen" },
+            { name: "Intel Core i9-14900", score: 92, cores: 24, threads: 32, socket: "LGA1700", tdp: 65, price: 499, generation: "14th Gen" },
+            { name: "Intel Core i9-14900F", score: 91, cores: 24, threads: 32, socket: "LGA1700", tdp: 65, price: 479, generation: "14th Gen" },
+            { name: "Intel Core i7-14700K", score: 93, cores: 20, threads: 28, socket: "LGA1700", tdp: 253, price: 409, generation: "14th Gen" },
+            { name: "Intel Core i7-14700KF", score: 92, cores: 20, threads: 28, socket: "LGA1700", tdp: 253, price: 389, generation: "14th Gen" },
+            { name: "Intel Core i7-14700", score: 88, cores: 20, threads: 28, socket: "LGA1700", tdp: 65, price: 359, generation: "14th Gen" },
+            { name: "Intel Core i7-14700F", score: 87, cores: 20, threads: 28, socket: "LGA1700", tdp: 65, price: 339, generation: "14th Gen" },
+            { name: "Intel Core i5-14600K", score: 85, cores: 14, threads: 20, socket: "LGA1700", tdp: 181, price: 319, generation: "14th Gen" },
+            { name: "Intel Core i5-14600KF", score: 84, cores: 14, threads: 20, socket: "LGA1700", tdp: 181, price: 294, generation: "14th Gen" },
+            { name: "Intel Core i5-14600", score: 80, cores: 14, threads: 20, socket: "LGA1700", tdp: 65, price: 249, generation: "14th Gen" },
+            { name: "Intel Core i5-14500", score: 78, cores: 14, threads: 20, socket: "LGA1700", tdp: 65, price: 229, generation: "14th Gen" },
+            { name: "Intel Core i5-14400", score: 72, cores: 10, threads: 16, socket: "LGA1700", tdp: 65, price: 199, generation: "14th Gen" },
+            { name: "Intel Core i5-14400F", score: 71, cores: 10, threads: 16, socket: "LGA1700", tdp: 65, price: 179, generation: "14th Gen" },
+            { name: "Intel Core i3-14100", score: 55, cores: 4, threads: 8, socket: "LGA1700", tdp: 60, price: 129, generation: "14th Gen" },
+            { name: "Intel Core i3-14100F", score: 54, cores: 4, threads: 8, socket: "LGA1700", tdp: 58, price: 109, generation: "14th Gen" },
+            // Intel 13th Gen
+            { name: "Intel Core i9-13900KS", score: 96, cores: 24, threads: 32, socket: "LGA1700", tdp: 253, price: 549, generation: "13th Gen" },
+            { name: "Intel Core i9-13900K", score: 94, cores: 24, threads: 32, socket: "LGA1700", tdp: 253, price: 489, generation: "13th Gen" },
+            { name: "Intel Core i9-13900KF", score: 93, cores: 24, threads: 32, socket: "LGA1700", tdp: 253, price: 469, generation: "13th Gen" },
+            { name: "Intel Core i9-13900", score: 88, cores: 24, threads: 32, socket: "LGA1700", tdp: 65, price: 429, generation: "13th Gen" },
+            { name: "Intel Core i9-13900F", score: 87, cores: 24, threads: 32, socket: "LGA1700", tdp: 65, price: 409, generation: "13th Gen" },
+            { name: "Intel Core i7-13700K", score: 89, cores: 16, threads: 24, socket: "LGA1700", tdp: 253, price: 359, generation: "13th Gen" },
+            { name: "Intel Core i7-13700KF", score: 88, cores: 16, threads: 24, socket: "LGA1700", tdp: 253, price: 339, generation: "13th Gen" },
+            { name: "Intel Core i7-13700", score: 84, cores: 16, threads: 24, socket: "LGA1700", tdp: 65, price: 299, generation: "13th Gen" },
+            { name: "Intel Core i7-13700F", score: 83, cores: 16, threads: 24, socket: "LGA1700", tdp: 65, price: 279, generation: "13th Gen" },
+            { name: "Intel Core i5-13600K", score: 82, cores: 14, threads: 20, socket: "LGA1700", tdp: 181, price: 279, generation: "13th Gen" },
+            { name: "Intel Core i5-13600KF", score: 81, cores: 14, threads: 20, socket: "LGA1700", tdp: 181, price: 259, generation: "13th Gen" },
+            { name: "Intel Core i5-13500", score: 75, cores: 14, threads: 20, socket: "LGA1700", tdp: 65, price: 219, generation: "13th Gen" },
+            { name: "Intel Core i5-13400", score: 68, cores: 10, threads: 16, socket: "LGA1700", tdp: 65, price: 189, generation: "13th Gen" },
+            { name: "Intel Core i5-13400F", score: 67, cores: 10, threads: 16, socket: "LGA1700", tdp: 65, price: 169, generation: "13th Gen" },
+            { name: "Intel Core i3-13100", score: 52, cores: 4, threads: 8, socket: "LGA1700", tdp: 60, price: 119, generation: "13th Gen" },
+            { name: "Intel Core i3-13100F", score: 51, cores: 4, threads: 8, socket: "LGA1700", tdp: 58, price: 99, generation: "13th Gen" },
+            // Intel 12th Gen
+            { name: "Intel Core i9-12900KS", score: 88, cores: 16, threads: 24, socket: "LGA1700", tdp: 241, price: 399, generation: "12th Gen" },
+            { name: "Intel Core i9-12900K", score: 85, cores: 16, threads: 24, socket: "LGA1700", tdp: 241, price: 349, generation: "12th Gen" },
+            { name: "Intel Core i9-12900KF", score: 84, cores: 16, threads: 24, socket: "LGA1700", tdp: 241, price: 329, generation: "12th Gen" },
+            { name: "Intel Core i9-12900", score: 80, cores: 16, threads: 24, socket: "LGA1700", tdp: 65, price: 299, generation: "12th Gen" },
+            { name: "Intel Core i9-12900F", score: 79, cores: 16, threads: 24, socket: "LGA1700", tdp: 65, price: 279, generation: "12th Gen" },
+            { name: "Intel Core i7-12700K", score: 78, cores: 12, threads: 20, socket: "LGA1700", tdp: 190, price: 269, generation: "12th Gen" },
+            { name: "Intel Core i7-12700KF", score: 77, cores: 12, threads: 20, socket: "LGA1700", tdp: 190, price: 249, generation: "12th Gen" },
+            { name: "Intel Core i7-12700", score: 74, cores: 12, threads: 20, socket: "LGA1700", tdp: 65, price: 229, generation: "12th Gen" },
+            { name: "Intel Core i7-12700F", score: 73, cores: 12, threads: 20, socket: "LGA1700", tdp: 65, price: 209, generation: "12th Gen" },
+            { name: "Intel Core i5-12600K", score: 72, cores: 10, threads: 16, socket: "LGA1700", tdp: 150, price: 199, generation: "12th Gen" },
+            { name: "Intel Core i5-12600KF", score: 71, cores: 10, threads: 16, socket: "LGA1700", tdp: 150, price: 179, generation: "12th Gen" },
+            { name: "Intel Core i5-12400", score: 62, cores: 6, threads: 12, socket: "LGA1700", tdp: 65, price: 149, generation: "12th Gen" },
+            { name: "Intel Core i5-12400F", score: 61, cores: 6, threads: 12, socket: "LGA1700", tdp: 65, price: 129, generation: "12th Gen" },
+            { name: "Intel Core i3-12100", score: 48, cores: 4, threads: 8, socket: "LGA1700", tdp: 60, price: 99, generation: "12th Gen" },
+            { name: "Intel Core i3-12100F", score: 47, cores: 4, threads: 8, socket: "LGA1700", tdp: 58, price: 79, generation: "12th Gen" },
+            // Intel 11th Gen
+            { name: "Intel Core i9-11900K", score: 68, cores: 8, threads: 16, socket: "LGA1200", tdp: 125, price: 249, generation: "11th Gen" },
+            { name: "Intel Core i9-11900KF", score: 67, cores: 8, threads: 16, socket: "LGA1200", tdp: 125, price: 229, generation: "11th Gen" },
+            { name: "Intel Core i7-11700K", score: 62, cores: 8, threads: 16, socket: "LGA1200", tdp: 125, price: 199, generation: "11th Gen" },
+            { name: "Intel Core i7-11700KF", score: 61, cores: 8, threads: 16, socket: "LGA1200", tdp: 125, price: 179, generation: "11th Gen" },
+            { name: "Intel Core i5-11600K", score: 55, cores: 6, threads: 12, socket: "LGA1200", tdp: 125, price: 149, generation: "11th Gen" },
+            { name: "Intel Core i5-11600KF", score: 54, cores: 6, threads: 12, socket: "LGA1200", tdp: 125, price: 129, generation: "11th Gen" },
+            { name: "Intel Core i5-11400", score: 50, cores: 6, threads: 12, socket: "LGA1200", tdp: 65, price: 119, generation: "11th Gen" },
+            { name: "Intel Core i5-11400F", score: 49, cores: 6, threads: 12, socket: "LGA1200", tdp: 65, price: 99, generation: "11th Gen" },
+            // Intel 10th Gen
+            { name: "Intel Core i9-10900K", score: 62, cores: 10, threads: 20, socket: "LGA1200", tdp: 125, price: 199, generation: "10th Gen" },
+            { name: "Intel Core i9-10900KF", score: 61, cores: 10, threads: 20, socket: "LGA1200", tdp: 125, price: 179, generation: "10th Gen" },
+            { name: "Intel Core i7-10700K", score: 55, cores: 8, threads: 16, socket: "LGA1200", tdp: 125, price: 149, generation: "10th Gen" },
+            { name: "Intel Core i7-10700KF", score: 54, cores: 8, threads: 16, socket: "LGA1200", tdp: 125, price: 129, generation: "10th Gen" },
+            { name: "Intel Core i5-10600K", score: 48, cores: 6, threads: 12, socket: "LGA1200", tdp: 125, price: 119, generation: "10th Gen" },
+            { name: "Intel Core i5-10400", score: 42, cores: 6, threads: 12, socket: "LGA1200", tdp: 65, price: 89, generation: "10th Gen" },
+            { name: "Intel Core i5-10400F", score: 41, cores: 6, threads: 12, socket: "LGA1200", tdp: 65, price: 69, generation: "10th Gen" },
+            { name: "Intel Core i3-10100", score: 35, cores: 4, threads: 8, socket: "LGA1200", tdp: 65, price: 79, generation: "10th Gen" },
+            { name: "Intel Core i3-10100F", score: 34, cores: 4, threads: 8, socket: "LGA1200", tdp: 65, price: 59, generation: "10th Gen" },
+            // Intel 9th Gen
+            { name: "Intel Core i9-9900K", score: 52, cores: 8, threads: 16, socket: "LGA1151", tdp: 95, price: 149, generation: "9th Gen" },
+            { name: "Intel Core i9-9900KF", score: 51, cores: 8, threads: 16, socket: "LGA1151", tdp: 95, price: 129, generation: "9th Gen" },
+            { name: "Intel Core i7-9700K", score: 45, cores: 8, threads: 8, socket: "LGA1151", tdp: 95, price: 119, generation: "9th Gen" },
+            { name: "Intel Core i7-9700", score: 43, cores: 8, threads: 8, socket: "LGA1151", tdp: 65, price: 109, generation: "9th Gen" },
+            { name: "Intel Core i5-9600K", score: 40, cores: 6, threads: 6, socket: "LGA1151", tdp: 95, price: 89, generation: "9th Gen" },
+            { name: "Intel Core i5-9400F", score: 35, cores: 6, threads: 6, socket: "LGA1151", tdp: 65, price: 69, generation: "9th Gen" },
+            { name: "Intel Core i3-9100F", score: 30, cores: 4, threads: 4, socket: "LGA1151", tdp: 65, price: 49, generation: "9th Gen" },
+            // Intel 8th Gen
+            { name: "Intel Core i7-8700K", score: 42, cores: 6, threads: 12, socket: "LGA1151", tdp: 95, price: 99, generation: "8th Gen" },
+            { name: "Intel Core i7-8700", score: 40, cores: 6, threads: 12, socket: "LGA1151", tdp: 65, price: 89, generation: "8th Gen" },
+            { name: "Intel Core i5-8600K", score: 38, cores: 6, threads: 6, socket: "LGA1151", tdp: 95, price: 79, generation: "8th Gen" },
+            { name: "Intel Core i5-8400", score: 32, cores: 6, threads: 6, socket: "LGA1151", tdp: 65, price: 59, generation: "8th Gen" },
+            { name: "Intel Core i3-8100", score: 25, cores: 4, threads: 4, socket: "LGA1151", tdp: 65, price: 39, generation: "8th Gen" },
+            // Intel 7th Gen (Kaby Lake)
+            { name: "Intel Core i7-7700K", score: 38, cores: 4, threads: 8, socket: "LGA1151", tdp: 91, price: 89, generation: "7th Gen" },
+            { name: "Intel Core i7-7700", score: 35, cores: 4, threads: 8, socket: "LGA1151", tdp: 65, price: 79, generation: "7th Gen" },
+            { name: "Intel Core i5-7600K", score: 30, cores: 4, threads: 4, socket: "LGA1151", tdp: 91, price: 59, generation: "7th Gen" },
+            { name: "Intel Core i5-7500", score: 28, cores: 4, threads: 4, socket: "LGA1151", tdp: 65, price: 49, generation: "7th Gen" },
+            { name: "Intel Core i5-7400", score: 26, cores: 4, threads: 4, socket: "LGA1151", tdp: 65, price: 45, generation: "7th Gen" },
+            { name: "Intel Core i3-7100", score: 22, cores: 2, threads: 4, socket: "LGA1151", tdp: 51, price: 35, generation: "7th Gen" },
+            // Intel 6th Gen (Skylake)
+            { name: "Intel Core i7-6700K", score: 35, cores: 4, threads: 8, socket: "LGA1151", tdp: 91, price: 79, generation: "6th Gen" },
+            { name: "Intel Core i7-6700", score: 32, cores: 4, threads: 8, socket: "LGA1151", tdp: 65, price: 69, generation: "6th Gen" },
+            { name: "Intel Core i5-6600K", score: 28, cores: 4, threads: 4, socket: "LGA1151", tdp: 91, price: 49, generation: "6th Gen" },
+            { name: "Intel Core i5-6500", score: 26, cores: 4, threads: 4, socket: "LGA1151", tdp: 65, price: 39, generation: "6th Gen" },
+            { name: "Intel Core i3-6100", score: 20, cores: 2, threads: 4, socket: "LGA1151", tdp: 51, price: 29, generation: "6th Gen" },
+            // Intel 4th Gen (Haswell) - Common legacy
+            { name: "Intel Core i7-4790K", score: 30, cores: 4, threads: 8, socket: "LGA1150", tdp: 88, price: 59, generation: "4th Gen" },
+            { name: "Intel Core i7-4770K", score: 28, cores: 4, threads: 8, socket: "LGA1150", tdp: 84, price: 49, generation: "4th Gen" },
+            { name: "Intel Core i5-4690K", score: 24, cores: 4, threads: 4, socket: "LGA1150", tdp: 88, price: 39, generation: "4th Gen" },
+            { name: "Intel Core i5-4460", score: 22, cores: 4, threads: 4, socket: "LGA1150", tdp: 84, price: 29, generation: "4th Gen" },
+            // Intel X-Series
+            { name: "Intel Core i9-10980XE", score: 75, cores: 18, threads: 36, socket: "LGA2066", tdp: 165, price: 799, generation: "X-Series" },
+            { name: "Intel Core i9-9980XE", score: 70, cores: 18, threads: 36, socket: "LGA2066", tdp: 165, price: 699, generation: "X-Series" },
+            { name: "Intel Core i9-7980XE", score: 65, cores: 18, threads: 36, socket: "LGA2066", tdp: 165, price: 599, generation: "X-Series" },
+        ];
+
+        const gpuDatabase = [
+            // NVIDIA RTX 50 Series
+            { name: "NVIDIA GeForce RTX 5090", score: 100, vram: 32, tdp: 575, price: 1999, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 5080", score: 92, vram: 16, tdp: 360, price: 999, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 5070 Ti", score: 85, vram: 16, tdp: 300, price: 749, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 5070", score: 78, vram: 12, tdp: 250, price: 549, generation: "Ada Lovelace" },
+            // NVIDIA RTX 40 Series
+            { name: "NVIDIA GeForce RTX 4090", score: 98, vram: 24, tdp: 450, price: 1599, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 4090 D", score: 94, vram: 24, tdp: 425, price: 1499, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 4080 Super", score: 90, vram: 16, tdp: 320, price: 999, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 4080", score: 88, vram: 16, tdp: 320, price: 899, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 4070 Ti Super", score: 84, vram: 16, tdp: 285, price: 799, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 4070 Ti", score: 82, vram: 12, tdp: 285, price: 699, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 4070 Super", score: 78, vram: 12, tdp: 220, price: 599, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 4070", score: 72, vram: 12, tdp: 200, price: 499, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 4060 Ti 16GB", score: 66, vram: 16, tdp: 165, price: 449, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 4060 Ti 8GB", score: 64, vram: 8, tdp: 160, price: 399, generation: "Ada Lovelace" },
+            { name: "NVIDIA GeForce RTX 4060", score: 58, vram: 8, tdp: 115, price: 299, generation: "Ada Lovelace" },
+            // NVIDIA RTX 30 Series
+            { name: "NVIDIA GeForce RTX 3090 Ti", score: 82, vram: 24, tdp: 450, price: 799, generation: "Ampere" },
+            { name: "NVIDIA GeForce RTX 3090", score: 78, vram: 24, tdp: 350, price: 699, generation: "Ampere" },
+            { name: "NVIDIA GeForce RTX 3080 Ti", score: 76, vram: 12, tdp: 350, price: 599, generation: "Ampere" },
+            { name: "NVIDIA GeForce RTX 3080 12GB", score: 74, vram: 12, tdp: 350, price: 549, generation: "Ampere" },
+            { name: "NVIDIA GeForce RTX 3080 10GB", score: 72, vram: 10, tdp: 320, price: 499, generation: "Ampere" },
+            { name: "NVIDIA GeForce RTX 3070 Ti", score: 66, vram: 8, tdp: 290, price: 399, generation: "Ampere" },
+            { name: "NVIDIA GeForce RTX 3070", score: 62, vram: 8, tdp: 220, price: 349, generation: "Ampere" },
+            { name: "NVIDIA GeForce RTX 3060 Ti", score: 58, vram: 8, tdp: 200, price: 299, generation: "Ampere" },
+            { name: "NVIDIA GeForce RTX 3060 12GB", score: 52, vram: 12, tdp: 170, price: 249, generation: "Ampere" },
+            { name: "NVIDIA GeForce RTX 3050 8GB", score: 40, vram: 8, tdp: 130, price: 179, generation: "Ampere" },
+            { name: "NVIDIA GeForce RTX 3050 6GB", score: 35, vram: 6, tdp: 70, price: 149, generation: "Ampere" },
+            // NVIDIA RTX 20 Series
+            { name: "NVIDIA GeForce RTX 2080 Ti", score: 58, vram: 11, tdp: 250, price: 399, generation: "Turing" },
+            { name: "NVIDIA GeForce RTX 2080 Super", score: 52, vram: 8, tdp: 250, price: 349, generation: "Turing" },
+            { name: "NVIDIA GeForce RTX 2080", score: 50, vram: 8, tdp: 215, price: 299, generation: "Turing" },
+            { name: "NVIDIA GeForce RTX 2070 Super", score: 48, vram: 8, tdp: 215, price: 279, generation: "Turing" },
+            { name: "NVIDIA GeForce RTX 2070", score: 45, vram: 8, tdp: 175, price: 249, generation: "Turing" },
+            { name: "NVIDIA GeForce RTX 2060 Super", score: 42, vram: 8, tdp: 175, price: 219, generation: "Turing" },
+            { name: "NVIDIA GeForce RTX 2060", score: 38, vram: 6, tdp: 160, price: 179, generation: "Turing" },
+            // NVIDIA GTX 16 Series
+            { name: "NVIDIA GeForce GTX 1660 Ti", score: 35, vram: 6, tdp: 120, price: 169, generation: "Turing" },
+            { name: "NVIDIA GeForce GTX 1660 Super", score: 33, vram: 6, tdp: 125, price: 149, generation: "Turing" },
+            { name: "NVIDIA GeForce GTX 1660", score: 30, vram: 6, tdp: 120, price: 129, generation: "Turing" },
+            { name: "NVIDIA GeForce GTX 1650 Super", score: 28, vram: 4, tdp: 100, price: 119, generation: "Turing" },
+            { name: "NVIDIA GeForce GTX 1650", score: 24, vram: 4, tdp: 75, price: 99, generation: "Turing" },
+            // NVIDIA GTX 10 Series
+            { name: "NVIDIA GeForce GTX 1080 Ti", score: 42, vram: 11, tdp: 250, price: 199, generation: "Pascal" },
+            { name: "NVIDIA GeForce GTX 1080", score: 35, vram: 8, tdp: 180, price: 149, generation: "Pascal" },
+            { name: "NVIDIA GeForce GTX 1070 Ti", score: 32, vram: 8, tdp: 180, price: 129, generation: "Pascal" },
+            { name: "NVIDIA GeForce GTX 1070", score: 30, vram: 8, tdp: 150, price: 119, generation: "Pascal" },
+            { name: "NVIDIA GeForce GTX 1060 6GB", score: 24, vram: 6, tdp: 120, price: 99, generation: "Pascal" },
+            { name: "NVIDIA GeForce GTX 1060 3GB", score: 20, vram: 3, tdp: 120, price: 79, generation: "Pascal" },
+            { name: "NVIDIA GeForce GTX 1050 Ti", score: 18, vram: 4, tdp: 75, price: 69, generation: "Pascal" },
+            { name: "NVIDIA GeForce GTX 1050", score: 15, vram: 2, tdp: 75, price: 59, generation: "Pascal" },
+            // NVIDIA GTX 900 Series
+            { name: "NVIDIA GeForce GTX 980 Ti", score: 30, vram: 6, tdp: 250, price: 99, generation: "Maxwell" },
+            { name: "NVIDIA GeForce GTX 980", score: 26, vram: 4, tdp: 165, price: 89, generation: "Maxwell" },
+            { name: "NVIDIA GeForce GTX 970", score: 22, vram: 4, tdp: 145, price: 69, generation: "Maxwell" },
+            { name: "NVIDIA GeForce GTX 960", score: 16, vram: 4, tdp: 120, price: 49, generation: "Maxwell" },
+            { name: "NVIDIA GeForce GTX 950", score: 12, vram: 2, tdp: 90, price: 39, generation: "Maxwell" },
+            // NVIDIA GTX 700 Series
+            { name: "NVIDIA GeForce GTX 780 Ti", score: 20, vram: 3, tdp: 250, price: 69, generation: "Kepler" },
+            { name: "NVIDIA GeForce GTX 780", score: 18, vram: 3, tdp: 250, price: 59, generation: "Kepler" },
+            { name: "NVIDIA GeForce GTX 770", score: 15, vram: 2, tdp: 230, price: 49, generation: "Kepler" },
+            { name: "NVIDIA GeForce GTX 760", score: 12, vram: 2, tdp: 170, price: 39, generation: "Kepler" },
+            { name: "NVIDIA GeForce GTX 750 Ti", score: 10, vram: 2, tdp: 60, price: 35, generation: "Maxwell" },
+            // NVIDIA Titan Series
+            { name: "NVIDIA Titan RTX", score: 85, vram: 24, tdp: 280, price: 1299, generation: "Turing" },
+            { name: "NVIDIA Titan V", score: 70, vram: 12, tdp: 250, price: 999, generation: "Volta" },
+            { name: "NVIDIA Titan Xp", score: 45, vram: 12, tdp: 250, price: 399, generation: "Pascal" },
+            { name: "NVIDIA Titan X (Maxwell)", score: 32, vram: 12, tdp: 250, price: 299, generation: "Maxwell" },
+            // AMD RX 9000 Series
+            { name: "AMD Radeon RX 9070 XT", score: 82, vram: 16, tdp: 300, price: 649, generation: "RDNA 4" },
+            { name: "AMD Radeon RX 9070", score: 75, vram: 16, tdp: 250, price: 549, generation: "RDNA 4" },
+            // AMD RX 7000 Series
+            { name: "AMD Radeon RX 7900 XTX", score: 88, vram: 24, tdp: 355, price: 899, generation: "RDNA 3" },
+            { name: "AMD Radeon RX 7900 XT", score: 82, vram: 20, tdp: 315, price: 749, generation: "RDNA 3" },
+            { name: "AMD Radeon RX 7900 GRE", score: 76, vram: 16, tdp: 260, price: 549, generation: "RDNA 3" },
+            { name: "AMD Radeon RX 7800 XT", score: 70, vram: 16, tdp: 263, price: 449, generation: "RDNA 3" },
+            { name: "AMD Radeon RX 7700 XT", score: 64, vram: 12, tdp: 245, price: 399, generation: "RDNA 3" },
+            { name: "AMD Radeon RX 7600 XT", score: 55, vram: 16, tdp: 190, price: 329, generation: "RDNA 3" },
+            { name: "AMD Radeon RX 7600", score: 50, vram: 8, tdp: 165, price: 249, generation: "RDNA 3" },
+            // AMD RX 6000 Series
+            { name: "AMD Radeon RX 6950 XT", score: 78, vram: 16, tdp: 335, price: 599, generation: "RDNA 2" },
+            { name: "AMD Radeon RX 6900 XT", score: 74, vram: 16, tdp: 300, price: 499, generation: "RDNA 2" },
+            { name: "AMD Radeon RX 6800 XT", score: 70, vram: 16, tdp: 300, price: 449, generation: "RDNA 2" },
+            { name: "AMD Radeon RX 6800", score: 64, vram: 16, tdp: 250, price: 399, generation: "RDNA 2" },
+            { name: "AMD Radeon RX 6750 XT", score: 58, vram: 12, tdp: 250, price: 349, generation: "RDNA 2" },
+            { name: "AMD Radeon RX 6700 XT", score: 54, vram: 12, tdp: 230, price: 299, generation: "RDNA 2" },
+            { name: "AMD Radeon RX 6700", score: 50, vram: 10, tdp: 175, price: 259, generation: "RDNA 2" },
+            { name: "AMD Radeon RX 6650 XT", score: 48, vram: 8, tdp: 180, price: 229, generation: "RDNA 2" },
+            { name: "AMD Radeon RX 6600 XT", score: 45, vram: 8, tdp: 160, price: 199, generation: "RDNA 2" },
+            { name: "AMD Radeon RX 6600", score: 42, vram: 8, tdp: 132, price: 169, generation: "RDNA 2" },
+            { name: "AMD Radeon RX 6500 XT", score: 28, vram: 4, tdp: 107, price: 119, generation: "RDNA 2" },
+            { name: "AMD Radeon RX 6400", score: 22, vram: 4, tdp: 53, price: 99, generation: "RDNA 2" },
+            // AMD RX 5000 Series
+            { name: "AMD Radeon RX 5700 XT", score: 48, vram: 8, tdp: 225, price: 249, generation: "RDNA" },
+            { name: "AMD Radeon RX 5700", score: 44, vram: 8, tdp: 180, price: 219, generation: "RDNA" },
+            { name: "AMD Radeon RX 5600 XT", score: 38, vram: 6, tdp: 150, price: 179, generation: "RDNA" },
+            { name: "AMD Radeon RX 5500 XT 8GB", score: 32, vram: 8, tdp: 130, price: 149, generation: "RDNA" },
+            { name: "AMD Radeon RX 5500 XT 4GB", score: 28, vram: 4, tdp: 130, price: 129, generation: "RDNA" },
+            // AMD Vega / VII
+            { name: "AMD Radeon VII", score: 50, vram: 16, tdp: 300, price: 299, generation: "GCN 5.1" },
+            { name: "AMD Radeon RX Vega 64", score: 45, vram: 8, tdp: 295, price: 199, generation: "GCN 5.0" },
+            { name: "AMD Radeon RX Vega 56", score: 40, vram: 8, tdp: 210, price: 179, generation: "GCN 5.0" },
+            // AMD RX 500/400 Series
+            { name: "AMD Radeon RX 590", score: 28, vram: 8, tdp: 175, price: 109, generation: "Polaris" },
+            { name: "AMD Radeon RX 580 8GB", score: 26, vram: 8, tdp: 185, price: 99, generation: "Polaris" },
+            { name: "AMD Radeon RX 580 4GB", score: 24, vram: 4, tdp: 185, price: 79, generation: "Polaris" },
+            { name: "AMD Radeon RX 570 8GB", score: 22, vram: 8, tdp: 150, price: 89, generation: "Polaris" },
+            { name: "AMD Radeon RX 570 4GB", score: 20, vram: 4, tdp: 150, price: 69, generation: "Polaris" },
+            { name: "AMD Radeon RX 560", score: 14, vram: 4, tdp: 75, price: 49, generation: "Polaris" },
+            { name: "AMD Radeon RX 550", score: 10, vram: 2, tdp: 50, price: 39, generation: "Polaris" },
+            { name: "AMD Radeon RX 480 8GB", score: 25, vram: 8, tdp: 150, price: 89, generation: "Polaris" },
+            { name: "AMD Radeon RX 480 4GB", score: 23, vram: 4, tdp: 150, price: 69, generation: "Polaris" },
+            { name: "AMD Radeon RX 470", score: 20, vram: 4, tdp: 120, price: 59, generation: "Polaris" },
+            // Intel Arc
+            { name: "Intel Arc A770 16GB", score: 55, vram: 16, tdp: 225, price: 299, generation: "Alchemist" },
+            { name: "Intel Arc A770 8GB", score: 52, vram: 8, tdp: 225, price: 269, generation: "Alchemist" },
+            { name: "Intel Arc A750", score: 48, vram: 8, tdp: 225, price: 229, generation: "Alchemist" },
+            { name: "Intel Arc A580", score: 40, vram: 8, tdp: 175, price: 179, generation: "Alchemist" },
+            { name: "Intel Arc A380", score: 22, vram: 6, tdp: 75, price: 99, generation: "Alchemist" },
+            { name: "Intel Arc A310", score: 15, vram: 4, tdp: 75, price: 79, generation: "Alchemist" },
+        ];
+
+        const motherboardDatabase = [
+            // AMD AM5 Motherboards
+            { name: "ASUS ROG Crosshair X870E Hero", socket: "AM5", chipset: "X870E", ddr: "DDR5", price: 699, pcie: "5.0" },
+            { name: "ASUS ROG Crosshair X670E Hero", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 699, pcie: "5.0" },
+            { name: "ASUS ROG Crosshair X670E Extreme", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 999, pcie: "5.0" },
+            { name: "ASUS ROG Strix X870E-E Gaming WiFi", socket: "AM5", chipset: "X870E", ddr: "DDR5", price: 549, pcie: "5.0" },
+            { name: "ASUS ROG Strix X670E-E Gaming WiFi", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 499, pcie: "5.0" },
+            { name: "ASUS ROG Strix X670E-F Gaming WiFi", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 449, pcie: "5.0" },
+            { name: "ASUS ROG Strix B650E-E Gaming WiFi", socket: "AM5", chipset: "B650E", ddr: "DDR5", price: 349, pcie: "5.0" },
+            { name: "ASUS ROG Strix B650E-F Gaming WiFi", socket: "AM5", chipset: "B650E", ddr: "DDR5", price: 299, pcie: "5.0" },
+            { name: "ASUS TUF Gaming X670E-Plus", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 329, pcie: "5.0" },
+            { name: "ASUS TUF Gaming B650-Plus", socket: "AM5", chipset: "B650", ddr: "DDR5", price: 199, pcie: "4.0" },
+            { name: "ASUS Prime X670E-Pro", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 349, pcie: "5.0" },
+            { name: "ASUS Prime B650-Plus", socket: "AM5", chipset: "B650", ddr: "DDR5", price: 149, pcie: "4.0" },
+            { name: "ASUS ProArt X670E-Creator", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 499, pcie: "5.0" },
+            { name: "MSI MEG X870E Ace", socket: "AM5", chipset: "X870E", ddr: "DDR5", price: 699, pcie: "5.0" },
+            { name: "MSI MEG X670E Ace", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 649, pcie: "5.0" },
+            { name: "MSI MEG X670E Godlike", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 999, pcie: "5.0" },
+            { name: "MSI MPG X870E Carbon WiFi", socket: "AM5", chipset: "X870E", ddr: "DDR5", price: 449, pcie: "5.0" },
+            { name: "MSI MPG X670E Carbon WiFi", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 399, pcie: "5.0" },
+            { name: "MSI MAG X870 Tomahawk WiFi", socket: "AM5", chipset: "X870", ddr: "DDR5", price: 299, pcie: "5.0" },
+            { name: "MSI MAG X670E Tomahawk WiFi", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 289, pcie: "5.0" },
+            { name: "MSI MAG B650 Tomahawk WiFi", socket: "AM5", chipset: "B650", ddr: "DDR5", price: 229, pcie: "4.0" },
+            { name: "MSI Pro B650-P WiFi", socket: "AM5", chipset: "B650", ddr: "DDR5", price: 179, pcie: "4.0" },
+            { name: "Gigabyte X870E Aorus Master", socket: "AM5", chipset: "X870E", ddr: "DDR5", price: 599, pcie: "5.0" },
+            { name: "Gigabyte X670E Aorus Master", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 479, pcie: "5.0" },
+            { name: "Gigabyte X670E Aorus Xtreme", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 799, pcie: "5.0" },
+            { name: "Gigabyte B650E Aorus Master", socket: "AM5", chipset: "B650E", ddr: "DDR5", price: 299, pcie: "5.0" },
+            { name: "Gigabyte B650 Aorus Elite AX", socket: "AM5", chipset: "B650", ddr: "DDR5", price: 229, pcie: "4.0" },
+            { name: "Gigabyte B650 Gaming X AX", socket: "AM5", chipset: "B650", ddr: "DDR5", price: 179, pcie: "4.0" },
+            { name: "ASRock X670E Taichi", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 499, pcie: "5.0" },
+            { name: "ASRock X670E Steel Legend", socket: "AM5", chipset: "X670E", ddr: "DDR5", price: 299, pcie: "5.0" },
+            { name: "ASRock B650E PG Riptide WiFi", socket: "AM5", chipset: "B650E", ddr: "DDR5", price: 229, pcie: "5.0" },
+            { name: "ASRock B650 LiveMixer", socket: "AM5", chipset: "B650", ddr: "DDR5", price: 179, pcie: "4.0" },
+            // AMD AM4 Motherboards
+            { name: "ASUS ROG Crosshair VIII Dark Hero", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 449, pcie: "4.0" },
+            { name: "ASUS ROG Crosshair VIII Hero", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 379, pcie: "4.0" },
+            { name: "ASUS ROG Strix X570-E Gaming", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 329, pcie: "4.0" },
+            { name: "ASUS ROG Strix X570-F Gaming", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 279, pcie: "4.0" },
+            { name: "ASUS ROG Strix B550-E Gaming", socket: "AM4", chipset: "B550", ddr: "DDR4", price: 259, pcie: "4.0" },
+            { name: "ASUS ROG Strix B550-F Gaming", socket: "AM4", chipset: "B550", ddr: "DDR4", price: 199, pcie: "4.0" },
+            { name: "ASUS TUF Gaming X570-Plus", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 199, pcie: "4.0" },
+            { name: "ASUS TUF Gaming B550-Plus", socket: "AM4", chipset: "B550", ddr: "DDR4", price: 149, pcie: "4.0" },
+            { name: "ASUS Prime X570-Pro", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 249, pcie: "4.0" },
+            { name: "ASUS Prime B550-Plus", socket: "AM4", chipset: "B550", ddr: "DDR4", price: 129, pcie: "4.0" },
+            { name: "MSI MEG X570 Godlike", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 699, pcie: "4.0" },
+            { name: "MSI MEG X570 Ace", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 369, pcie: "4.0" },
+            { name: "MSI MPG X570 Gaming Pro Carbon", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 259, pcie: "4.0" },
+            { name: "MSI MAG X570 Tomahawk WiFi", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 219, pcie: "4.0" },
+            { name: "MSI MAG B550 Tomahawk", socket: "AM4", chipset: "B550", ddr: "DDR4", price: 179, pcie: "4.0" },
+            { name: "MSI B550-A Pro", socket: "AM4", chipset: "B550", ddr: "DDR4", price: 129, pcie: "4.0" },
+            { name: "Gigabyte X570 Aorus Master", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 349, pcie: "4.0" },
+            { name: "Gigabyte X570 Aorus Elite", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 199, pcie: "4.0" },
+            { name: "Gigabyte B550 Aorus Master", socket: "AM4", chipset: "B550", ddr: "DDR4", price: 269, pcie: "4.0" },
+            { name: "Gigabyte B550 Aorus Pro", socket: "AM4", chipset: "B550", ddr: "DDR4", price: 179, pcie: "4.0" },
+            { name: "ASRock X570 Taichi", socket: "AM4", chipset: "X570", ddr: "DDR4", price: 299, pcie: "4.0" },
+            { name: "ASRock B550 Steel Legend", socket: "AM4", chipset: "B550", ddr: "DDR4", price: 149, pcie: "4.0" },
+            { name: "ASUS ROG Strix B450-F Gaming II", socket: "AM4", chipset: "B450", ddr: "DDR4", price: 129, pcie: "3.0" },
+            { name: "ASUS TUF Gaming B450-Plus II", socket: "AM4", chipset: "B450", ddr: "DDR4", price: 109, pcie: "3.0" },
+            { name: "ASRock B450M Steel Legend", socket: "AM4", chipset: "B450", ddr: "DDR4", price: 89, pcie: "3.0" },
+            { name: "Gigabyte B450M DS3H", socket: "AM4", chipset: "B450", ddr: "DDR4", price: 79, pcie: "3.0" },
+            { name: "MSI B450M Mortar Max", socket: "AM4", chipset: "B450", ddr: "DDR4", price: 99, pcie: "3.0" },
+            { name: "MSI B450-A Pro Max", socket: "AM4", chipset: "B450", ddr: "DDR4", price: 89, pcie: "3.0" },
+            { name: "MSI B450 Tomahawk Max", socket: "AM4", chipset: "B450", ddr: "DDR4", price: 109, pcie: "3.0" },
+            { name: "Gigabyte B450 Aorus Elite", socket: "AM4", chipset: "B450", ddr: "DDR4", price: 99, pcie: "3.0" },
+            { name: "ASUS Prime X470-Pro", socket: "AM4", chipset: "X470", ddr: "DDR4", price: 149, pcie: "3.0" },
+            { name: "MSI X470 Gaming Plus Max", socket: "AM4", chipset: "X470", ddr: "DDR4", price: 119, pcie: "3.0" },
+            { name: "ASUS Prime B350-Plus", socket: "AM4", chipset: "B350", ddr: "DDR4", price: 89, pcie: "3.0" },
+            { name: "MSI B350 Tomahawk", socket: "AM4", chipset: "B350", ddr: "DDR4", price: 79, pcie: "3.0" },
+            { name: "ASUS Prime A320M-K", socket: "AM4", chipset: "A320", ddr: "DDR4", price: 59, pcie: "3.0" },
+            // Intel LGA1700 Motherboards
+            { name: "ASUS ROG Maximus Z790 Extreme", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 799, pcie: "5.0" },
+            { name: "ASUS ROG Maximus Z790 Hero", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 599, pcie: "5.0" },
+            { name: "ASUS ROG Maximus Z790 Dark Hero", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 799, pcie: "5.0" },
+            { name: "ASUS ROG Strix Z790-E Gaming WiFi", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 449, pcie: "5.0" },
+            { name: "ASUS ROG Strix Z790-F Gaming WiFi", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 399, pcie: "5.0" },
+            { name: "ASUS ROG Strix Z790-A Gaming WiFi", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 349, pcie: "5.0" },
+            { name: "ASUS ROG Strix B760-F Gaming WiFi", socket: "LGA1700", chipset: "B760", ddr: "DDR5", price: 269, pcie: "4.0" },
+            { name: "ASUS TUF Gaming Z790-Plus WiFi", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 299, pcie: "5.0" },
+            { name: "ASUS TUF Gaming B760-Plus WiFi", socket: "LGA1700", chipset: "B760", ddr: "DDR5", price: 199, pcie: "4.0" },
+            { name: "ASUS Prime Z790-P", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 249, pcie: "5.0" },
+            { name: "ASUS Prime B760-Plus", socket: "LGA1700", chipset: "B760", ddr: "DDR5", price: 149, pcie: "4.0" },
+            { name: "ASUS Prime H610M-A", socket: "LGA1700", chipset: "H610", ddr: "DDR4", price: 99, pcie: "4.0" },
+            { name: "MSI Pro H610M-G", socket: "LGA1700", chipset: "H610", ddr: "DDR4", price: 89, pcie: "4.0" },
+            { name: "Gigabyte H610M S2H", socket: "LGA1700", chipset: "H610", ddr: "DDR4", price: 85, pcie: "4.0" },
+            { name: "ASRock H610M-HDV", socket: "LGA1700", chipset: "H610", ddr: "DDR4", price: 79, pcie: "4.0" },
+            { name: "MSI MEG Z790 Godlike", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 1299, pcie: "5.0" },
+            { name: "MSI MEG Z790 Ace", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 649, pcie: "5.0" },
+            { name: "MSI MPG Z790 Carbon WiFi", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 449, pcie: "5.0" },
+            { name: "MSI MPG Z790 Edge WiFi", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 349, pcie: "5.0" },
+            { name: "MSI MAG Z790 Tomahawk WiFi", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 299, pcie: "5.0" },
+            { name: "MSI MAG B760 Tomahawk WiFi", socket: "LGA1700", chipset: "B760", ddr: "DDR5", price: 219, pcie: "4.0" },
+            { name: "MSI Pro Z790-A WiFi", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 229, pcie: "5.0" },
+            { name: "MSI Pro B760-P WiFi", socket: "LGA1700", chipset: "B760", ddr: "DDR5", price: 159, pcie: "4.0" },
+            { name: "Gigabyte Z790 Aorus Master", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 499, pcie: "5.0" },
+            { name: "Gigabyte Z790 Aorus Elite AX", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 299, pcie: "5.0" },
+            { name: "Gigabyte B760 Aorus Elite AX", socket: "LGA1700", chipset: "B760", ddr: "DDR5", price: 199, pcie: "4.0" },
+            { name: "Gigabyte B760 Gaming X AX", socket: "LGA1700", chipset: "B760", ddr: "DDR5", price: 159, pcie: "4.0" },
+            { name: "ASRock Z790 Taichi", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 499, pcie: "5.0" },
+            { name: "ASRock Z790 Steel Legend", socket: "LGA1700", chipset: "Z790", ddr: "DDR5", price: 279, pcie: "5.0" },
+            { name: "ASRock B760 Steel Legend", socket: "LGA1700", chipset: "B760", ddr: "DDR5", price: 179, pcie: "4.0" },
+            // Intel Z690 Motherboards
+            { name: "ASUS ROG Maximus Z690 Extreme", socket: "LGA1700", chipset: "Z690", ddr: "DDR5", price: 699, pcie: "5.0" },
+            { name: "ASUS ROG Maximus Z690 Hero", socket: "LGA1700", chipset: "Z690", ddr: "DDR5", price: 549, pcie: "5.0" },
+            { name: "ASUS ROG Strix Z690-E Gaming WiFi", socket: "LGA1700", chipset: "Z690", ddr: "DDR5", price: 429, pcie: "5.0" },
+            { name: "ASUS TUF Gaming Z690-Plus WiFi", socket: "LGA1700", chipset: "Z690", ddr: "DDR5", price: 289, pcie: "5.0" },
+            { name: "MSI MEG Z690 Ace", socket: "LGA1700", chipset: "Z690", ddr: "DDR5", price: 599, pcie: "5.0" },
+            { name: "MSI MPG Z690 Carbon WiFi", socket: "LGA1700", chipset: "Z690", ddr: "DDR5", price: 399, pcie: "5.0" },
+            { name: "Gigabyte Z690 Aorus Master", socket: "LGA1700", chipset: "Z690", ddr: "DDR5", price: 449, pcie: "5.0" },
+            // Intel LGA1200 Motherboards
+            { name: "ASUS ROG Maximus XIII Hero", socket: "LGA1200", chipset: "Z590", ddr: "DDR4", price: 449, pcie: "4.0" },
+            { name: "ASUS ROG Strix Z590-E Gaming", socket: "LGA1200", chipset: "Z590", ddr: "DDR4", price: 349, pcie: "4.0" },
+            { name: "ASUS TUF Gaming Z590-Plus", socket: "LGA1200", chipset: "Z590", ddr: "DDR4", price: 229, pcie: "4.0" },
+            { name: "ASUS Prime Z590-A", socket: "LGA1200", chipset: "Z590", ddr: "DDR4", price: 249, pcie: "4.0" },
+            { name: "MSI MEG Z590 Ace", socket: "LGA1200", chipset: "Z590", ddr: "DDR4", price: 449, pcie: "4.0" },
+            { name: "MSI MPG Z590 Gaming Carbon WiFi", socket: "LGA1200", chipset: "Z590", ddr: "DDR4", price: 299, pcie: "4.0" },
+            { name: "MSI MAG B560 Tomahawk WiFi", socket: "LGA1200", chipset: "B560", ddr: "DDR4", price: 179, pcie: "4.0" },
+            { name: "Gigabyte Z590 Aorus Master", socket: "LGA1200", chipset: "Z590", ddr: "DDR4", price: 379, pcie: "4.0" },
+            { name: "ASRock Z590 Taichi", socket: "LGA1200", chipset: "Z590", ddr: "DDR4", price: 349, pcie: "4.0" },
+            { name: "ASUS ROG Maximus XII Hero", socket: "LGA1200", chipset: "Z490", ddr: "DDR4", price: 399, pcie: "3.0" },
+            { name: "MSI MPG Z490 Gaming Edge WiFi", socket: "LGA1200", chipset: "Z490", ddr: "DDR4", price: 199, pcie: "3.0" },
+            { name: "ASUS ROG Strix B460-H Gaming", socket: "LGA1200", chipset: "B460", ddr: "DDR4", price: 139, pcie: "3.0" },
+            { name: "ASUS TUF Gaming B460-Plus", socket: "LGA1200", chipset: "B460", ddr: "DDR4", price: 119, pcie: "3.0" },
+            { name: "MSI MAG B460 Torpedo", socket: "LGA1200", chipset: "B460", ddr: "DDR4", price: 129, pcie: "3.0" },
+            { name: "Gigabyte B460M DS3H", socket: "LGA1200", chipset: "B460", ddr: "DDR4", price: 89, pcie: "3.0" },
+            { name: "ASRock B460 Phantom Gaming 4", socket: "LGA1200", chipset: "B460", ddr: "DDR4", price: 99, pcie: "3.0" },
+            { name: "MSI MAG B460M Mortar", socket: "LGA1200", chipset: "B460", ddr: "DDR4", price: 109, pcie: "3.0" },
+            { name: "ASUS Prime H410M-E", socket: "LGA1200", chipset: "H410", ddr: "DDR4", price: 79, pcie: "3.0" },
+            // Intel LGA1151 Motherboards
+            { name: "ASUS ROG Maximus XI Hero", socket: "LGA1151", chipset: "Z390", ddr: "DDR4", price: 249, pcie: "3.0" },
+            { name: "ASUS ROG Strix Z390-E Gaming", socket: "LGA1151", chipset: "Z390", ddr: "DDR4", price: 199, pcie: "3.0" },
+            { name: "ASUS TUF Z390-Plus Gaming", socket: "LGA1151", chipset: "Z390", ddr: "DDR4", price: 159, pcie: "3.0" },
+            { name: "ASUS Prime Z390-A", socket: "LGA1151", chipset: "Z390", ddr: "DDR4", price: 179, pcie: "3.0" },
+            { name: "MSI MEG Z390 Ace", socket: "LGA1151", chipset: "Z390", ddr: "DDR4", price: 249, pcie: "3.0" },
+            { name: "MSI MPG Z390 Gaming Pro Carbon", socket: "LGA1151", chipset: "Z390", ddr: "DDR4", price: 189, pcie: "3.0" },
+            { name: "Gigabyte Z390 Aorus Master", socket: "LGA1151", chipset: "Z390", ddr: "DDR4", price: 229, pcie: "3.0" },
+            { name: "ASRock Z390 Taichi", socket: "LGA1151", chipset: "Z390", ddr: "DDR4", price: 199, pcie: "3.0" },
+            { name: "ASUS Prime Z370-A", socket: "LGA1151", chipset: "Z370", ddr: "DDR4", price: 169, pcie: "3.0" },
+            { name: "MSI Z370 Gaming Pro Carbon", socket: "LGA1151", chipset: "Z370", ddr: "DDR4", price: 179, pcie: "3.0" },
+            { name: "ASUS ROG Strix B360-F Gaming", socket: "LGA1151", chipset: "B360", ddr: "DDR4", price: 119, pcie: "3.0" },
+            { name: "ASUS Prime B365-Plus", socket: "LGA1151", chipset: "B365", ddr: "DDR4", price: 99, pcie: "3.0" },
+            { name: "MSI B365M PRO-VDH", socket: "LGA1151", chipset: "B365", ddr: "DDR4", price: 79, pcie: "3.0" },
+            { name: "Gigabyte B365M DS3H", socket: "LGA1151", chipset: "B365", ddr: "DDR4", price: 75, pcie: "3.0" },
+            { name: "Gigabyte B360 Aorus Gaming 3", socket: "LGA1151", chipset: "B360", ddr: "DDR4", price: 109, pcie: "3.0" },
+            { name: "ASUS Prime H310M-K", socket: "LGA1151", chipset: "H310", ddr: "DDR4", price: 69, pcie: "3.0" },
+            { name: "ASUS Maximus VIII Hero", socket: "LGA1151", chipset: "Z170", ddr: "DDR4", price: 229, pcie: "3.0" },
+            { name: "MSI Z170A Gaming M5", socket: "LGA1151", chipset: "Z170", ddr: "DDR4", price: 179, pcie: "3.0" },
+            { name: "Gigabyte GA-Z170X-Gaming 7", socket: "LGA1151", chipset: "Z170", ddr: "DDR4", price: 199, pcie: "3.0" },
+            { name: "ASUS Prime Z270-A", socket: "LGA1151", chipset: "Z270", ddr: "DDR4", price: 169, pcie: "3.0" },
+            { name: "MSI Z270 Gaming Pro Carbon", socket: "LGA1151", chipset: "Z270", ddr: "DDR4", price: 179, pcie: "3.0" },
+            // Intel LGA1150 (Haswell)
+            { name: "ASUS Z97-A", socket: "LGA1150", chipset: "Z97", ddr: "DDR3", price: 149, pcie: "3.0" },
+            { name: "MSI Z97 Gaming 5", socket: "LGA1150", chipset: "Z97", ddr: "DDR3", price: 139, pcie: "3.0" },
+            { name: "Gigabyte GA-Z97X-Gaming 5", socket: "LGA1150", chipset: "Z97", ddr: "DDR3", price: 139, pcie: "3.0" },
+            { name: "ASUS H81M-K", socket: "LGA1150", chipset: "H81", ddr: "DDR3", price: 59, pcie: "2.0" },
+            // AMD TR4/sTRX4
+            { name: "ASUS ROG Zenith II Extreme", socket: "sTRX4", chipset: "TRX40", ddr: "DDR4", price: 849, pcie: "4.0" },
+            { name: "Gigabyte TRX40 Aorus Xtreme", socket: "sTRX4", chipset: "TRX40", ddr: "DDR4", price: 849, pcie: "4.0" },
+            { name: "ASUS ROG Zenith Extreme", socket: "TR4", chipset: "X399", ddr: "DDR4", price: 549, pcie: "3.0" },
+            { name: "MSI MEG X399 Creation", socket: "TR4", chipset: "X399", ddr: "DDR4", price: 499, pcie: "3.0" },
+            // Intel LGA2066
+            { name: "ASUS ROG Rampage VI Extreme Encore", socket: "LGA2066", chipset: "X299", ddr: "DDR4", price: 749, pcie: "3.0" },
+            { name: "MSI Creator X299", socket: "LGA2066", chipset: "X299", ddr: "DDR4", price: 499, pcie: "3.0" },
+        ];
+
+        // Current selections
+        let selectedCPU = null;
+        let selectedGPU = null;
+        let selectedMotherboard = null;
+        let simulationUpgrades = [];
+
+        // Help content
+        const helpContent = {
+            cpu: {
+                title: "How to Find Your CPU",
+                content: [
+                    "<strong>Windows 10/11:</strong>",
+                    "1. Right-click on the Start button",
+                    "2. Select 'System'",
+                    "3. Look for 'Processor' under Device specifications",
+                    "",
+                    "<strong>Alternative Method:</strong>",
+                    "1. Press Windows + R",
+                    "2. Type 'dxdiag' and press Enter",
+                    "3. Look for 'Processor' on the System tab",
+                    "",
+                    "<strong>Using Task Manager:</strong>",
+                    "1. Press Ctrl + Shift + Esc",
+                    "2. Click 'Performance' tab",
+                    "3. Click 'CPU' - name shown at top right"
+                ]
+            },
+            gpu: {
+                title: "How to Find Your GPU",
+                content: [
+                    "<strong>Windows 10/11:</strong>",
+                    "1. Right-click on Desktop",
+                    "2. Select 'Display settings'",
+                    "3. Scroll down and click 'Advanced display'",
+                    "4. Look for 'Display adapter'",
+                    "",
+                    "<strong>Using Device Manager:</strong>",
+                    "1. Right-click Start button",
+                    "2. Select 'Device Manager'",
+                    "3. Expand 'Display adapters'",
+                    "",
+                    "<strong>Using Task Manager:</strong>",
+                    "1. Press Ctrl + Shift + Esc",
+                    "2. Click 'Performance' tab",
+                    "3. Click 'GPU' - name shown at top right"
+                ]
+            },
+            motherboard: {
+                title: "How to Find Your Motherboard",
+                content: [
+                    "<strong>Using System Information:</strong>",
+                    "1. Press Windows + R",
+                    "2. Type 'msinfo32' and press Enter",
+                    "3. Look for 'BaseBoard Manufacturer' and 'BaseBoard Product'",
+                    "",
+                    "<strong>Using Command Prompt:</strong>",
+                    "1. Press Windows + R",
+                    "2. Type 'cmd' and press Enter",
+                    "3. Type: wmic baseboard get product,manufacturer",
+                    "",
+                    "<strong>Physical Check:</strong>",
+                    "The motherboard model is usually printed on the board itself"
+                ]
+            },
+            ram: {
+                title: "How to Find Your RAM",
+                content: [
+                    "<strong>Using Task Manager:</strong>",
+                    "1. Press Ctrl + Shift + Esc",
+                    "2. Click 'Performance' tab",
+                    "3. Click 'Memory'",
+                    "4. See total RAM and speed",
+                    "",
+                    "<strong>Using Command Prompt:</strong>",
+                    "1. Press Windows + R, type 'cmd'",
+                    "2. Type: wmic memorychip get capacity,speed",
+                    "",
+                    "<strong>DDR Type:</strong>",
+                    "- DDR3: Typically 800-2133 MHz",
+                    "- DDR4: Typically 2133-3600 MHz",
+                    "- DDR5: Typically 4800-8000 MHz"
+                ]
+            },
+            storage: {
+                title: "How to Find Your Storage Type",
+                content: [
+                    "<strong>Using Task Manager:</strong>",
+                    "1. Press Ctrl + Shift + Esc",
+                    "2. Click 'Performance' tab",
+                    "3. Click each disk",
+                    "4. Type shows as 'SSD' or 'HDD'",
+                    "",
+                    "<strong>Using Device Manager:</strong>",
+                    "1. Right-click Start button",
+                    "2. Select 'Device Manager'",
+                    "3. Expand 'Disk drives'",
+                    "4. Search the model name online",
+                    "",
+                    "<strong>NVMe Check:</strong>",
+                    "In Device Manager, NVMe drives appear under 'Storage controllers'"
+                ]
+            },
+            psu: {
+                title: "How to Find Your Power Supply Wattage",
+                content: [
+                    "<strong>Physical Check (Recommended):</strong>",
+                    "1. Turn off and unplug your PC",
+                    "2. Open the side panel",
+                    "3. Look at the PSU label (usually on side)",
+                    "4. Wattage is prominently displayed",
+                    "",
+                    "<strong>Check Purchase Records:</strong>",
+                    "Look at your original purchase invoice or order",
+                    "",
+                    "<strong>Note:</strong>",
+                    "There's no software way to detect PSU wattage. You must check physically or refer to documentation."
+                ]
+            }
+        };
+
+        // Search component function
+        function searchComponent(type, query) {
+            const resultsDiv = document.getElementById(`${type}-results`);
+            if (query.length < 2) {
+                resultsDiv.classList.add('hidden');
+                return;
+            }
+
+            let database;
+            switch(type) {
+                case 'cpu': database = cpuDatabase; break;
+                case 'gpu': database = gpuDatabase; break;
+                case 'motherboard': database = motherboardDatabase; break;
+            }
+
+            const results = database.filter(item => 
+                item.name.toLowerCase().includes(query.toLowerCase())
+            ).slice(0, 10);
+
+            if (results.length === 0) {
+                resultsDiv.classList.add('hidden');
+                return;
+            }
+
+            resultsDiv.innerHTML = results.map(item => `
+                <div class="px-4 py-2 hover:bg-slate-700 cursor-pointer transition" 
+                    onclick="selectComponent('${type}', '${item.name.replace(/'/g, "\\'")}')">
+                    <span class="text-white">${item.name}</span>
+                    ${type !== 'motherboard' ? `<span class="text-gray-500 text-sm ml-2">Score: ${item.score}</span>` : ''}
+                    ${type === 'motherboard' ? `<span class="text-gray-500 text-sm ml-2">${item.socket} - ${item.chipset}</span>` : ''}
+                </div>
+            `).join('');
+
+            resultsDiv.classList.remove('hidden');
+        }
+
+        // Select component function
+        function selectComponent(type, name) {
+            let database, selected;
+            switch(type) {
+                case 'cpu': 
+                    database = cpuDatabase; 
+                    selected = database.find(c => c.name === name);
+                    selectedCPU = selected;
+                    break;
+                case 'gpu': 
+                    database = gpuDatabase; 
+                    selected = database.find(g => g.name === name);
+                    selectedGPU = selected;
+                    break;
+                case 'motherboard': 
+                    database = motherboardDatabase; 
+                    selected = database.find(m => m.name === name);
+                    selectedMotherboard = selected;
+                    break;
+            }
+
+            document.getElementById(`${type}-input`).value = name;
+            document.getElementById(`${type}-results`).classList.add('hidden');
+
+            // Show selected info
+            let info = '';
+            if (type === 'cpu' && selected) {
+                info = `Socket: ${selected.socket} | Cores: ${selected.cores}/${selected.threads} | TDP: ${selected.tdp}W | $${selected.price}`;
+            } else if (type === 'gpu' && selected) {
+                info = `VRAM: ${selected.vram}GB | TDP: ${selected.tdp}W | $${selected.price}`;
+            } else if (type === 'motherboard' && selected) {
+                info = `${selected.socket} | ${selected.chipset} | ${selected.ddr} | PCIe ${selected.pcie}`;
+            }
+            document.getElementById(`${type}-selected`).innerHTML = info;
+        }
+
+        // Show help modal
+        function showHelp(type) {
+            const modal = document.getElementById('help-modal');
+            const content = helpContent[type];
+            
+            document.getElementById('help-title').textContent = content.title;
+            document.getElementById('help-content').innerHTML = content.content.join('<br>');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeHelp() {
+            const modal = document.getElementById('help-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Main analysis function
+        function analyzeSystem() {
+            if (!selectedCPU || !selectedGPU || !selectedMotherboard) {
+                alert('Please select CPU, GPU, and Motherboard to analyze your system.');
+                return;
+            }
+
+            const ramSize = parseInt(document.getElementById('ram-size').value) || 16;
+            const ramSpeed = parseInt(document.getElementById('ram-speed').value) || 3200;
+            const ramType = document.getElementById('ram-type').value || 'DDR4';
+            const storageType = document.getElementById('storage-type').value || 'NVMe SSD';
+            const psuWattage = parseInt(document.getElementById('psu-wattage').value) || 650;
+            const resolution = document.querySelector('input[name="resolution"]:checked').value;
+
+            // Show results section
+            document.getElementById('results-section').classList.remove('hidden');
+
+            // Calculate scores
+            const cpuScore = selectedCPU.score;
+            const gpuScore = selectedGPU.score;
+            
+            // RAM score calculation
+            let ramScore = 50;
+            if (ramSize >= 32) ramScore += 25;
+            else if (ramSize >= 16) ramScore += 15;
+            if (ramSpeed >= 6000) ramScore += 25;
+            else if (ramSpeed >= 4800) ramScore += 20;
+            else if (ramSpeed >= 3600) ramScore += 15;
+            else if (ramSpeed >= 3200) ramScore += 10;
+            if (ramType === 'DDR5') ramScore += 10;
+            else if (ramType === 'DDR3') ramScore -= 20;
+            ramScore = Math.min(ramScore, 100);
+            ramScore = Math.max(ramScore, 10);
+
+            // Storage score
+            let storageScore = 30;
+            switch(storageType) {
+                case 'NVMe Gen5': storageScore = 100; break;
+                case 'NVMe Gen4': storageScore = 90; break;
+                case 'NVMe SSD': storageScore = 75; break;
+                case 'SATA SSD': storageScore = 55; break;
+                case 'HDD': storageScore = 25; break;
+            }
+
+            // Overall score (weighted)
+            const overallScore = Math.round(
+                (gpuScore * 0.45) + (cpuScore * 0.35) + (ramScore * 0.12) + (storageScore * 0.08)
+            );
+
+            // Animate overall score
+            animateScore(overallScore);
+
+            // Bottleneck analysis
+            displayBottleneck(cpuScore, gpuScore, resolution);
+
+            // FPS estimation
+            displayFPS(cpuScore, gpuScore, resolution);
+
+            // Component scores
+            displayComponentScores(cpuScore, gpuScore, ramScore, storageScore);
+
+            // Check motherboard limitations
+            checkMotherboardLimitations();
+
+            // Generate upgrade recommendations
+            generateUpgradeRecommendations(psuWattage);
+
+            // Scroll to results
+            document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function animateScore(targetScore) {
+            const scoreCircle = document.getElementById('score-circle');
+            const scoreText = document.getElementById('overall-score');
+            
+            const circumference = 2 * Math.PI * 70;
+            const offset = circumference - (targetScore / 100) * circumference;
+            
+            scoreCircle.style.strokeDashoffset = offset;
+            
+            let current = 0;
+            const interval = setInterval(() => {
+                if (current >= targetScore) {
+                    clearInterval(interval);
+                } else {
+                    current++;
+                    scoreText.textContent = current;
+                }
+            }, 20);
+        }
+
+        function displayBottleneck(cpuScore, gpuScore, resolution) {
+            const container = document.getElementById('bottleneck-display');
+            
+            // Resolution affects bottleneck
+            let cpuWeight = 0.5, gpuWeight = 0.5;
+            switch(resolution) {
+                case '1080p': cpuWeight = 0.6; gpuWeight = 0.4; break;
+                case '1440p': cpuWeight = 0.4; gpuWeight = 0.6; break;
+                case '4k': cpuWeight = 0.25; gpuWeight = 0.75; break;
+            }
+
+            const cpuImpact = cpuScore * cpuWeight;
+            const gpuImpact = gpuScore * gpuWeight;
+            const difference = Math.abs(cpuImpact - gpuImpact);
+
+            let bottleneck, severity, color;
+            if (difference < 5) {
+                bottleneck = 'Balanced';
+                severity = 'Your system is well balanced!';
+                color = 'text-green-400';
+            } else if (cpuImpact < gpuImpact) {
+                bottleneck = 'CPU Bottleneck';
+                severity = `Your CPU is limiting GPU by ~${Math.round((1 - cpuImpact/gpuImpact) * 100)}%`;
+                color = 'text-red-400';
+            } else {
+                bottleneck = 'GPU Bottleneck';
+                severity = `Your GPU is limiting performance by ~${Math.round((1 - gpuImpact/cpuImpact) * 100)}%`;
+                color = 'text-orange-400';
+            }
+
+            container.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-${bottleneck === 'Balanced' ? 'check-circle' : 'exclamation-triangle'} ${color} text-xl bottleneck-indicator"></i>
+                    <div>
+                        <p class="${color} font-medium">${bottleneck}</p>
+                        <p class="text-sm text-gray-400">${severity}</p>
+                    </div>
+                </div>
+                <div class="mt-4 space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm w-12">CPU</span>
+                        <div class="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-blue-500 rounded-full" style="width: ${cpuScore}%"></div>
+                        </div>
+                        <span class="text-sm w-8">${cpuScore}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm w-12">GPU</span>
+                        <div class="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-green-500 rounded-full" style="width: ${gpuScore}%"></div>
+                        </div>
+                        <span class="text-sm w-8">${gpuScore}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayFPS(cpuScore, gpuScore, resolution) {
+            const container = document.getElementById('fps-display');
+            
+            // Base FPS calculation based on scores and resolution
+            let baseFPS;
+            const combinedScore = (cpuScore * 0.4 + gpuScore * 0.6);
+            
+            switch(resolution) {
+                case '1080p': baseFPS = combinedScore * 1.8; break;
+                case '1440p': baseFPS = combinedScore * 1.2; break;
+                case '4k': baseFPS = combinedScore * 0.7; break;
+            }
+
+            // Game-specific estimates (2024 AAA titles)
+            const games = [
+                { name: 'Cyberpunk 2077: Phantom Liberty', modifier: 0.65 },
+                { name: "Alan Wake 2", modifier: 0.55 },
+                { name: 'Starfield', modifier: 0.6 },
+                { name: "Baldur's Gate 3", modifier: 0.85 },
+                { name: 'Hogwarts Legacy', modifier: 0.7 }
+            ];
+
+            container.innerHTML = games.map(game => {
+                const fps = Math.round(baseFPS * game.modifier);
+                const fpsColor = fps >= 60 ? 'text-green-400' : fps >= 30 ? 'text-yellow-400' : 'text-red-400';
+                const barWidth = Math.min((fps / 144) * 100, 100);
+                
+                return `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-300">${game.name}</span>
+                            <span class="${fpsColor} font-medium">${fps} FPS</span>
+                        </div>
+                        <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full fps-bar" style="width: ${barWidth}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function displayComponentScores(cpuScore, gpuScore, ramScore, storageScore) {
+            const container = document.getElementById('component-scores');
+            
+            const components = [
+                { name: 'CPU', score: cpuScore, icon: 'fa-microchip', color: 'blue', detail: selectedCPU.name },
+                { name: 'GPU', score: gpuScore, icon: 'fa-tv', color: 'green', detail: selectedGPU.name },
+                { name: 'RAM', score: ramScore, icon: 'fa-memory', color: 'yellow', detail: `${document.getElementById('ram-size').value || 16}GB ${document.getElementById('ram-type').value || 'DDR4'}` },
+                { name: 'Storage', score: storageScore, icon: 'fa-hdd', color: 'red', detail: document.getElementById('storage-type').value || 'NVMe SSD' },
+                { name: 'Motherboard', score: Math.round((selectedMotherboard.pcie === '5.0' ? 90 : selectedMotherboard.pcie === '4.0' ? 75 : selectedMotherboard.pcie === '3.0' ? 50 : 30)), icon: 'fa-server', color: 'purple', detail: selectedMotherboard.name }
+            ];
+
+            container.innerHTML = components.map(comp => {
+                const scoreColor = comp.score >= 80 ? 'text-green-400' : comp.score >= 50 ? 'text-yellow-400' : 'text-red-400';
+                const bgColor = comp.score >= 80 ? 'from-green-600' : comp.score >= 50 ? 'from-yellow-600' : 'from-red-600';
+                
+                return `
+                    <div class="bg-slate-700/50 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <i class="fas ${comp.icon} text-${comp.color}-400"></i>
+                                <span class="font-medium">${comp.name}</span>
+                            </div>
+                            <span class="${scoreColor} font-bold text-xl">${comp.score}</span>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-2 truncate" title="${comp.detail}">${comp.detail}</p>
+                        <div class="h-2 bg-slate-600 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r ${bgColor} to-transparent rounded-full" style="width: ${comp.score}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function checkMotherboardLimitations() {
+            const notice = document.getElementById('motherboard-notice');
+            const noticeText = document.getElementById('motherboard-notice-text');
+            
+            // Check if CPU can be upgraded on current motherboard
+            const compatibleCPUs = cpuDatabase.filter(cpu => 
+                cpu.socket === selectedMotherboard.socket && cpu.score > selectedCPU.score
+            );
+
+            if (compatibleCPUs.length === 0 && selectedCPU.score < selectedGPU.score - 15) {
+                notice.classList.remove('hidden');
+                
+                // Find best upgrade path
+                let recommendedSocket, recommendedReason;
+                if (selectedMotherboard.socket === 'AM4') {
+                    recommendedSocket = 'AM5';
+                    recommendedReason = 'AM5 offers DDR5 support, PCIe 5.0, and the latest Ryzen 7000/9000 series CPUs with significantly better single-thread and multi-thread performance.';
+                } else if (selectedMotherboard.socket === 'LGA1200' || selectedMotherboard.socket === 'LGA1151' || selectedMotherboard.socket === 'LGA1150') {
+                    recommendedSocket = 'LGA1700';
+                    recommendedReason = 'LGA1700 supports Intel 12th, 13th, and 14th gen CPUs with hybrid architecture, DDR5, and PCIe 5.0 for massive performance gains.';
+                } else if (selectedMotherboard.socket === 'AM3+') {
+                    recommendedSocket = 'AM4/AM5';
+                    recommendedReason = 'The AM3+ platform is obsolete. Upgrading to AM5 (Ryzen 7000+) or AM4 (Ryzen 5000) will provide immense performance gains in all areas.';
+                } else {
+                    recommendedSocket = selectedMotherboard.socket;
+                    recommendedReason = 'Your current platform is modern, but CPU options are limited. Consider the flagship CPUs available for your socket.';
+                }
+
+                noticeText.innerHTML = `
+                    <strong>Your CPU (${selectedCPU.name}) is significantly weaker than your GPU (${selectedGPU.name})</strong>, but your motherboard (${selectedMotherboard.socket}) has limited upgrade options.<br><br>
+                    <strong>Why upgrade your motherboard?</strong><br>
+                    ${recommendedReason}<br><br>
+                    <strong>Benefits of platform upgrade:</strong>
+                    <ul class="list-disc list-inside mt-2 space-y-1">
+                        <li>Access to more powerful CPUs that match your GPU</li>
+                        <li>Better future-proofing for upcoming CPU generations</li>
+                        <li>Support for faster RAM and storage technologies</li>
+                        <li>Improved power delivery and thermal management</li>
+                    </ul>
+                `;
+            } else {
+                notice.classList.add('hidden');
+            }
+        }
+
+        function generateUpgradeRecommendations(psuWattage) {
+            const container = document.getElementById('upgrade-recommendations');
+            const simOptions = document.getElementById('simulation-options');
+            const upgrades = [];
+            simulationUpgrades = [];
+
+            // Find compatible CPU upgrades
+            const compatibleCPUs = cpuDatabase.filter(cpu => 
+                cpu.socket === selectedMotherboard.socket && 
+                cpu.score > selectedCPU.score &&
+                cpu.tdp <= psuWattage * 0.4 // Relaxed PSU constraint for CPU
+            ).sort((a, b) => {
+                // Sort by value (score improvement per dollar)
+                const aValue = (a.score - selectedCPU.score) / a.price;
+                const bValue = (b.score - selectedCPU.score) / b.price;
+                return bValue - aValue;
+            }).slice(0, 3);
+
+            compatibleCPUs.forEach(cpu => {
+                const scoreGain = cpu.score - selectedCPU.score;
+                const fpsGain = Math.round(scoreGain * 0.8);
+                
+                upgrades.push({
+                    type: 'CPU',
+                    name: cpu.name,
+                    price: cpu.price,
+                    scoreGain,
+                    fpsGain,
+                    icon: 'fa-microchip',
+                    color: 'blue',
+                    details: `${cpu.cores}C/${cpu.threads}T | TDP: ${cpu.tdp}W`,
+                    value: (scoreGain / cpu.price * 100).toFixed(1),
+                    component: cpu
+                });
+            });
+
+            // Find GPU upgrades
+            const gpuUpgrades = gpuDatabase.filter(gpu => 
+                gpu.score > selectedGPU.score &&
+                gpu.tdp + selectedCPU.tdp + 100 <= psuWattage // Check if PSU can handle it
+            ).sort((a, b) => {
+                const aValue = (a.score - selectedGPU.score) / a.price;
+                const bValue = (b.score - selectedGPU.score) / b.price;
+                return bValue - aValue;
+            }).slice(0, 3);
+
+            gpuUpgrades.forEach(gpu => {
+                const scoreGain = gpu.score - selectedGPU.score;
+                const resolution = document.querySelector('input[name="resolution"]:checked').value;
+                let fpsMultiplier = resolution === '1080p' ? 1.2 : resolution === '1440p' ? 1.5 : 2.0;
+                const fpsGain = Math.round(scoreGain * fpsMultiplier);
+                
+                upgrades.push({
+                    type: 'GPU',
+                    name: gpu.name,
+                    price: gpu.price,
+                    scoreGain,
+                    fpsGain,
+                    icon: 'fa-tv',
+                    color: 'green',
+                    details: `${gpu.vram}GB VRAM | TDP: ${gpu.tdp}W`,
+                    value: (scoreGain / gpu.price * 100).toFixed(1),
+                    component: gpu
+                });
+            });
+
+            // Sort all upgrades by value
+            upgrades.sort((a, b) => parseFloat(b.value) - parseFloat(a.value));
+
+            // Display upgrades
+            container.innerHTML = upgrades.length > 0 ? upgrades.slice(0, 6).map((upgrade, index) => {
+                simulationUpgrades.push(upgrade);
+                return `
+                    <div class="bg-slate-700/50 rounded-xl p-5 border border-slate-600 hover:border-indigo-500 transition upgrade-card">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-2 py-1 bg-${upgrade.color}-500/20 text-${upgrade.color}-400 rounded text-sm font-medium">
+                                <i class="fas ${upgrade.icon} mr-1"></i>${upgrade.type}
+                            </span>
+                            <span class="text-green-400 font-bold">$${upgrade.price}</span>
+                        </div>
+                        <h4 class="font-medium mb-2 text-lg">${upgrade.name}</h4>
+                        <p class="text-sm text-gray-400 mb-3">${upgrade.details}</p>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Score Gain:</span>
+                                <span class="text-green-400">+${upgrade.scoreGain} points</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Est. FPS Gain:</span>
+                                <span class="text-green-400">+${upgrade.fpsGain} FPS</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Value Score:</span>
+                                <span class="text-purple-400">${upgrade.value}/$ point</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-600">
+                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                                <i class="fas fa-bolt text-yellow-500"></i>
+                                <span>PSU: ${upgrade.type === 'GPU' ? upgrade.component.tdp + selectedCPU.tdp + 100 : selectedGPU.tdp + upgrade.component.tdp + 100}W required</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('') : '<p class="text-gray-400 col-span-3">Your current components are optimal or PSU upgrade needed for better options.</p>';
+
+            // Display simulation options
+            simOptions.innerHTML = simulationUpgrades.slice(0, 6).map((upgrade, index) => `
+                <label class="flex items-center gap-2 bg-slate-700 px-4 py-2 rounded-lg cursor-pointer hover:bg-slate-600 transition">
+                    <input type="checkbox" value="${index}" class="accent-purple-500 sim-checkbox">
+                    <span class="text-sm">${upgrade.type}: ${upgrade.name.split(' ').slice(-2).join(' ')}</span>
+                </label>
+            `).join('');
+        }
+
+        function simulateFPS() {
+            const checkedBoxes = document.querySelectorAll('.sim-checkbox:checked');
+            const resultsDiv = document.getElementById('simulation-results');
+            
+            if (checkedBoxes.length === 0) {
+                resultsDiv.innerHTML = '<p class="text-gray-400">Please select at least one upgrade to simulate.</p>';
+                resultsDiv.classList.remove('hidden');
+                return;
+            }
+
+            let newCPUScore = selectedCPU.score;
+            let newGPUScore = selectedGPU.score;
+            let totalCost = 0;
+
+            checkedBoxes.forEach(checkbox => {
+                const upgrade = simulationUpgrades[parseInt(checkbox.value)];
+                if (upgrade.type === 'CPU') {
+                    newCPUScore = Math.max(newCPUScore, upgrade.component.score);
+                } else {
+                    newGPUScore = Math.max(newGPUScore, upgrade.component.score);
+                }
+                totalCost += upgrade.price;
+            });
+
+            const resolution = document.querySelector('input[name="resolution"]:checked').value;
+            const oldCombined = (selectedCPU.score * 0.4 + selectedGPU.score * 0.6);
+            const newCombined = (newCPUScore * 0.4 + newGPUScore * 0.6);
+
+            let resMultiplier;
+            switch(resolution) {
+                case '1080p': resMultiplier = 1.8; break;
+                case '1440p': resMultiplier = 1.2; break;
+                case '4k': resMultiplier = 0.7; break;
+            }
+
+            const games = [
+                { name: 'Cyberpunk 2077: Phantom Liberty', modifier: 0.65 },
+                { name: "Alan Wake 2", modifier: 0.55 },
+                { name: 'Starfield', modifier: 0.6 },
+                { name: "Baldur's Gate 3", modifier: 0.85 },
+                { name: 'Hogwarts Legacy', modifier: 0.7 }
+            ];
+
+            resultsDiv.innerHTML = `
+                <div class="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 rounded-xl p-6 border border-purple-500/30">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-bar text-purple-400"></i>
+                        Simulated Performance with Upgrades
+                    </h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-gray-400 mb-4">Upgrade Cost: <span class="text-green-400 font-bold">$${totalCost}</span></p>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-gray-400 w-24">CPU Score:</span>
+                                    <span class="text-white">${selectedCPU.score}</span>
+                                    <i class="fas fa-arrow-right text-purple-400"></i>
+                                    <span class="text-green-400 font-bold">${newCPUScore}</span>
+                                    ${newCPUScore > selectedCPU.score ? `<span class="text-green-400 text-sm">(+${newCPUScore - selectedCPU.score})</span>` : ''}
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-gray-400 w-24">GPU Score:</span>
+                                    <span class="text-white">${selectedGPU.score}</span>
+                                    <i class="fas fa-arrow-right text-purple-400"></i>
+                                    <span class="text-green-400 font-bold">${newGPUScore}</span>
+                                    ${newGPUScore > selectedGPU.score ? `<span class="text-green-400 text-sm">(+${newGPUScore - selectedGPU.score})</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 mb-3">Estimated FPS at ${resolution}:</p>
+                            <div class="space-y-2">
+                                ${games.map(game => {
+                                    const oldFPS = Math.round(oldCombined * resMultiplier * game.modifier);
+                                    const newFPS = Math.round(newCombined * resMultiplier * game.modifier);
+                                    const gain = newFPS - oldFPS;
+                                    const gainPercent = Math.round((gain / oldFPS) * 100);
+                                    
+                                    return `
+                                        <div class="flex items-center justify-between text-sm">
+                                            <span class="text-gray-300">${game.name}</span>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-gray-500">${oldFPS}</span>
+                                                <i class="fas fa-arrow-right text-purple-400"></i>
+                                                <span class="text-green-400 font-bold">${newFPS} FPS</span>
+                                                <span class="text-green-400 text-xs">(+${gainPercent}%)</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.classList.remove('hidden');
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#cpu-input') && !e.target.closest('#cpu-results')) {
+                document.getElementById('cpu-results').classList.add('hidden');
+            }
+            if (!e.target.closest('#gpu-input') && !e.target.closest('#gpu-results')) {
+                document.getElementById('gpu-results').classList.add('hidden');
+            }
+            if (!e.target.closest('#motherboard-input') && !e.target.closest('#motherboard-results')) {
+                document.getElementById('motherboard-results').classList.add('hidden');
+            }
+            if (e.target.id === 'help-modal') {
+                closeHelp();
+            }
+        });
+    </script>
+</body>
+</html>
